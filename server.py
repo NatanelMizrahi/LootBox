@@ -20,7 +20,7 @@ def post_score():
     )
 
 
-@app.route('/game', methods=['GET'])
+@app.route('/', methods=['GET'])
 def load_game():
     game = request.args.get('game', default='pickle-rick-pong', type=str)
     return redirect(url_for('static', filename=f'{game}.html'))

@@ -279,7 +279,7 @@ function playGame(){
     var canvas=document.getElementById('game_canvas');
 
     $('.input').keydown(setKey);
-    document.getElementById('multiplayer').addEventListener('click',toggleMultiplayer,false);
+    $('#multiplayer').click(toggleMultiplayer)
     document.getElementById('graphics').addEventListener('click',toggleTheme,false);
     document.getElementById('reset').addEventListener('click',reset,false);
 
@@ -568,12 +568,14 @@ function playGame(){
         var index=(Math.floor(time/frames.frameRate) % arr.length);
         frames.frameI= index % 5;
         frames.frameJ=Math.floor(arr[index]/5);
+
         //animate p1
         ctx.save();
         ctx.translate(spacing*2,p1.y);
         ctx.rotate(35*Math.PI/180);
         ctx.drawImage(images.p1,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fh/2);
         ctx.restore();
+
         //animate p2
         ctx.save();
         ctx.translate(cWidth-spacing*2,p2.y);
