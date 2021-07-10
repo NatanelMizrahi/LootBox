@@ -1,17 +1,11 @@
-// const fetch = require('node-fetch');
-const PORT =  5000
-const HTTP_HEADER = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json, text/plain, */*',
-    'Access-Control-Allow-Origin': '*',
-    'User-Agent': '*',
-};
+import {postScore} from '../scoreAPI.js'
 
-function drawImage(ctx, image, x, y, w, h) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.drawImage(image, 0,0,image.width, image.height, -w/2, -h/2, w, h);
-    ctx.restore();
+function drawImage(ctx, image, x, y, w, h, alpha = 1) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(x, y);
+        ctx.drawImage(image, 0,0,image.width, image.height, -w/2, -h/2, w, h);
+        ctx.restore();
 }
 class Portal {
     static PLAYER_MARGIN_WIDTH = 200;
@@ -22,12 +16,13 @@ class Portal {
     static MAX_PORTAL_WIDTH_FACTOR = 5;
     static MIN_PORTAL_DURATION = 50;
     static MAX_PORTAL_DURATION = 300;
-    static MAX_PORTAL_DELAY = 0;
-
+    static MAX_PORTAL_DELAY = 100;
+    static ALPHA_INCREMENT = 0.1;
     static LEFT = "LEFT";
     static RIGHT = "RIGHT";
 
     constructor(canvas , ball) {
+        this.alpha = 0;
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.ball = ball;
@@ -84,8 +79,9 @@ class Portal {
     }
 
     drawPortal() {
-        drawImage(this.ctx, images.portal, this.leftPortalX, this.leftPortalY, this.width, this.height);
-        drawImage(this.ctx, images.portal, this.rightPortalX, this.rightPortalY, this.width, this.height);
+        this.alpha = Math.min(1, this.alpha + Portal.ALPHA_INCREMENT);
+        drawImage(this.ctx, images.portal, this.leftPortalX, this.leftPortalY, this.width, this.height, this.alpha);
+        drawImage(this.ctx, images.portal, this.rightPortalX, this.rightPortalY, this.width, this.height, this.alpha);
     }
     pointInsidePortal(x, y, padding=0){
         // Returns the portal in which the (x,y) coordinates resides in, with a specified padding,
@@ -158,8 +154,10 @@ class Portal {
         this.teleportBall();
     }
     tick() {
-        if (this.delay === 0 && this.duration === 0)
+        if (this.delay === 0 && this.duration === 0){
+            this.alpha = 0;
             this.randomizeParams();
+        }
         if (this.delay > 0){
             this.delay--;
             this.ball.draw();
@@ -242,11 +240,11 @@ function loadImages(){
     let imageList = ["background", "ball", "p1", "p2", "portal"];
     let numOfImages = imageList.length;
     let counter=0;
-    for (img of imageList) {
+    for (let img of imageList) {
         images[img] = new Image();
         images[img].src = `assets/images/${img}.png`;
     }
-    for (img in images){
+    for (let img in images){
         images[img].onload=function(){
             this.imageReady=true;
             counter++;
@@ -262,7 +260,7 @@ function hideLoadingScreen(){
 function isLoaded(){
     var imagesLoaded=true;
     var skipAudioLoad = true;
-    for (img in images){
+    for (let img in images){
         if (!images[img].imageReady){
             imagesLoaded=false;
         }
@@ -326,7 +324,8 @@ function playGame(){
     var paused=false;
 
     //game render interval
-    setInterval(render,1000/fps);
+    requestAnimationFrame(render);
+//    setInterval(render,1000/fps);
 
     if(!default_settings){
         multiplayer=prompt('Please choose game mode. \n Singleplayer: (Enter) \n Multiplayer:  (any other key)') || false;
@@ -513,6 +512,7 @@ function playGame(){
 
     //graphics
     function render(){
+        requestAnimationFrame(render);
         if(paused) return;
         time++;
         drawBG();
@@ -541,7 +541,6 @@ function playGame(){
         ctx.fillText(p1.points, cWidth/4, cHeight/8 + 70);
         ctx.fillText(p2.points, 3*cWidth/4, cHeight/8 + 70);/**/
         ctx.font="20px arial";
-        ctx.fillText('By Natanel Mizrahi', cWidth-140, cHeight-5);
     }
     function drawPlayers(){
         if(themeOn){
@@ -583,19 +582,6 @@ function playGame(){
     }
 
     //Game logics
-    function postScore(){
-//        let body = ;
-//        // fetch(`http://localhost:{$PORT}`, {
-//        //         method: 'post',
-//        //         body:    JSON.stringify(body),
-//        //         headers: HTTP_HEADER
-//        //     })
-//        //     .then(console.log)
-//        //     .catch(console.error);
-//
-//        console.log(`http://localhost:${PORT}`);
-        $.post(`http://localhost:${PORT}/score`, { score: difficulty }, console.log);
-    }
     //p1=true, p2=false
     function score(player1){
         ball.x=cWidth/2;
@@ -612,7 +598,7 @@ function playGame(){
             p2.points++;
             ball.xSpeed= -ball.xSpeed; //ball goes to P1's direction
         }
-        postScore()
+        postScore(difficulty)
     }
 
     function checkWin(player1){
