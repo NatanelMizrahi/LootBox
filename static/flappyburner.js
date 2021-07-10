@@ -104,6 +104,7 @@ function playGame() {
     var default_settings = true;
     var multiplayer = false;
     var themeOn = true;
+    const showHitBox = false;
     var roundEdges = true;
     var default_speed = 6;
     var difficulty = 1.5;
@@ -268,15 +269,15 @@ function playGame() {
             let obstacle = {
                 y: cHeight,
                 x: cWidth,
-                scale: (0.5 + Math.random()),
+                scale: (0.3 + 1.7 * Math.random()),
                 speed: sceneSpeed,
                 up: false,
                 down: false,
                 checkRange: function () {
-                    return this.x >= 0 && this.x < cWidth && this.y >= 0 && this.y < cHeight
+                    return this.x >= 0 && this.x <= cWidth && this.y >= 0 && this.y <= cHeight
                 },
                 move: function (dt) {
-                    this.y = cHeight - (this.radiusY() * 2)
+                    this.y = (0.9 * cHeight) - (this.radiusY() * 2)
                     this.x = this.x - sceneSpeed * dt
                 },
                 radiusX: function () {
@@ -292,13 +293,16 @@ function playGame() {
                 contains: function (p) {
                     const delta = [this.x - p.x, this.y - p.y]
                     const dist = Math.sqrt(delta[0] * delta[0] + delta[1] * delta[1])
-                    return dist < p.radius + Math.max(this.radiusY(), this.radiusX())
-
+                    return dist < (p.radius + this.hitBoxRadius())
+                },
+                hitBoxFactor: 0.75,
+                hitBoxRadius: function (){
+                    return Math.max(this.radiusX(), this.radiusY()) * this.hitBoxFactor
                 }
             }
             obstacles.push(obstacle)
         }
-        obstacles.filter(obstacle => obstacle.checkRange())
+        obstacles = obstacles.filter(obstacle => obstacle.checkRange())
         obstacles.forEach(obstacle => obstacle.move(dt))
         obstacles.forEach(
             obstacle => {
@@ -306,8 +310,23 @@ function playGame() {
                 const index = (Math.floor(now * cactusFrames.frameRate) % arr.length);
                 cactusFrames.frameI = index % numCactusW;
                 cactusFrames.frameJ = Math.floor(index / numCactusH);
+                if (showHitBox){
+                    ctx.save()
+                    circle(obstacle.x, obstacle.y, obstacle.hitBoxRadius(), 'red')
+                    ctx.restore()
+                }
                 ctx.save()
-                ctx.drawImage(images.cactus, cactusW * cactusFrames.frameI, cactusH * cactusFrames.frameJ, cactusW, cactusH, obstacle.x, obstacle.y, obstacle.radiusX() * 2,  obstacle.radiusY() * 2);
+                ctx.drawImage(
+                    images.cactus, cactusW * cactusFrames.frameI, cactusH * cactusFrames.frameJ, cactusW, cactusH,
+                    obstacle.x - obstacle.radiusX(), obstacle.y - obstacle.radiusY(), obstacle.radiusX() * 2,  obstacle.radiusY() * 2
+                );
+                if (showHitBox){
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'green';
+                    ctx.moveTo(obstacle.x, obstacle.y)
+                    ctx.lineTo(player.x, player.y)
+                    ctx.stroke()
+                }
                 ctx.restore()
                 return obstacle
             }
@@ -374,7 +393,7 @@ function playGame() {
         birdFrames.frameI = index % numBirdW;
         birdFrames.frameJ = Math.floor(index / numBirdH);
         ctx.save()
-        ctx.drawImage(images.bird, birdW * birdFrames.frameI, birdH * birdFrames.frameJ, birdW, birdH, player.x, player.y, player.size, player.size );
+        ctx.drawImage(images.bird, birdW * birdFrames.frameI, birdH * birdFrames.frameJ, birdW, birdH, player.x - player.radius, player.y - player.radius, player.size, player.size );
         ctx.restore()
     }
 
@@ -384,6 +403,7 @@ function playGame() {
             if (obstacle.contains(player)) {
                 endGame = true;
             }
+
         })
         return endGame;
     }
@@ -406,7 +426,7 @@ function playGame() {
 
     function scoreBoard(now, dt) {
         ctx.save()
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
         ctx.font = '15px arial';
         ctx.fillText('Score', 3 * 0.25 * cWidth, cHeight / 8);
