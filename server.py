@@ -9,9 +9,9 @@ app.config["DEBUG"] = True
 serial_manager: SerialBusManager = SerialBusManager()
 
 
-@app.route('/score', methods=['POST'])
+@app.route('/report')
 def post_score():
-    score = float(request.form.get('score'))
+    score = float(request.args.get('score'))
     serial_manager.rotate_motor(score)
     return (
         json.dumps({'success': True, 'score': score}),

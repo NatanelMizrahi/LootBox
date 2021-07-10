@@ -596,7 +596,9 @@ function playGame(){
 //        //     .catch(console.error);
 //
 //        console.log(`http://localhost:${PORT}`);
-        $.post(`http://localhost:${PORT}/score`, { score: difficulty }, console.log);
+        fetch(`http://localhost:${PORT}/report?score=${difficulty}`)
+            .then(console.log)
+            .catch(console.error);
     }
     //p1=true, p2=false
     function score(player1){
