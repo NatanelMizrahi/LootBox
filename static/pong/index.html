@@ -11,8 +11,8 @@
 <!--	</style>-->
 </head>
 <body>
-	<div class="spacer"></div>
-	<div class="controls">
+	<div class="spacer" hidden></div>
+	<div class="controls" hidden>
 		<h3>Controls</h3>
 		<div>
 			<span>Multiplayer &nbsp;</span>
@@ -45,7 +45,7 @@
 		<div>
 			<span>Goal: </span>
 			<input id="goal" class="input" value="10">
-			<button class="button" id="reset" onclick="blur()">Reset Score</button>	
+			<button class="button" id="reset" onclick="blur()">Reset Score</button>
 			<br><br>
 			<p>Press Enter/Esc to Pause game.</p>
 		</div>
@@ -74,6 +74,7 @@
 			</div>
 
 	</div>
-	<script src="game.js"></script>
+	<script type="module" src="game.js"></script>
+	<script type="module" src="scoreAPI.js"></script>
 </body>
 </html>
