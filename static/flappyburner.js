@@ -151,14 +151,13 @@ function playGame() {
         pauseBtn.onclick = function () {
             pauseMenu.style.display = "none";
             paused = false;
+            resetGameState()
         };
     }
 
 
-
     function onEndGame() {
         pause("Game Over", "New Game")
-        resetGameState()
     }
 
     function setDifficulty(e) {
@@ -218,6 +217,7 @@ function playGame() {
         previousRenderTime = now;
         return {now, dt};
     }
+
     //graphics
     let previousRenderTime = nowSec();
 
@@ -228,6 +228,7 @@ function playGame() {
         player.vy = 0
         previousRenderTime = nowSec();
         prevGenDistance = 0;
+        setTimeout(playGame, 0)
 
     }
 
@@ -293,10 +294,10 @@ function playGame() {
                 contains: function (p) {
                     const delta = [this.x - p.x, this.y - p.y]
                     const dist = Math.sqrt(delta[0] * delta[0] + delta[1] * delta[1])
-                    return dist < (p.radius + this.hitBoxRadius())
+                    return dist < (p.hitBoxRadius() + this.hitBoxRadius())
                 },
-                hitBoxFactor: 0.75,
-                hitBoxRadius: function (){
+                hitBoxFactor: 0.7,
+                hitBoxRadius: function () {
                     return Math.max(this.radiusX(), this.radiusY()) * this.hitBoxFactor
                 }
             }
@@ -310,7 +311,7 @@ function playGame() {
                 const index = (Math.floor(now * cactusFrames.frameRate) % arr.length);
                 cactusFrames.frameI = index % numCactusW;
                 cactusFrames.frameJ = Math.floor(index / numCactusH);
-                if (showHitBox){
+                if (showHitBox) {
                     ctx.save()
                     circle(obstacle.x, obstacle.y, obstacle.hitBoxRadius(), 'red')
                     ctx.restore()
@@ -318,9 +319,9 @@ function playGame() {
                 ctx.save()
                 ctx.drawImage(
                     images.cactus, cactusW * cactusFrames.frameI, cactusH * cactusFrames.frameJ, cactusW, cactusH,
-                    obstacle.x - obstacle.radiusX(), obstacle.y - obstacle.radiusY(), obstacle.radiusX() * 2,  obstacle.radiusY() * 2
+                    obstacle.x - obstacle.radiusX(), obstacle.y - obstacle.radiusY(), obstacle.radiusX() * 2, obstacle.radiusY() * 2
                 );
-                if (showHitBox){
+                if (showHitBox) {
                     ctx.beginPath();
                     ctx.strokeStyle = 'green';
                     ctx.moveTo(obstacle.x, obstacle.y)
@@ -377,8 +378,11 @@ function playGame() {
         calcScore: function (dt) {
             this.distanceCovered += sceneSpeed * dt
             this.score = Math.floor(this.distanceCovered * 0.01)
+        },
+        hitBoxFactor: 0.7,
+        hitBoxRadius: function () {
+            return this.radius * this.hitBoxFactor
         }
-
     }
 
     window.addEventListener('keydown', (e) => player.onUpKeyPress(e), false)
@@ -392,8 +396,13 @@ function playGame() {
         const index = (Math.floor(Math.floor(now * birdFrames.frameRate)) % birdFrames.numSprites);
         birdFrames.frameI = index % numBirdW;
         birdFrames.frameJ = Math.floor(index / numBirdH);
+        if (showHitBox) {
+            ctx.save()
+            circle(player.x, player.y, player.hitBoxRadius(), 'red')
+            ctx.restore()
+        }
         ctx.save()
-        ctx.drawImage(images.bird, birdW * birdFrames.frameI, birdH * birdFrames.frameJ, birdW, birdH, player.x - player.radius, player.y - player.radius, player.size, player.size );
+        ctx.drawImage(images.bird, birdW * birdFrames.frameI, birdH * birdFrames.frameJ, birdW, birdH, player.x - player.radius, player.y - player.radius, player.size, player.size);
         ctx.restore()
     }
 
@@ -412,7 +421,7 @@ function playGame() {
 
     function drawBG(now, dt) {
         if (themeOn) {
-            seemX = (seemX - sceneSpeed * dt ) % cWidth
+            seemX = (seemX - sceneSpeed * dt) % cWidth
             ctx.save()
             ctx.translate(seemX, 0)
             ctx.drawImage(images.flappybg, 0, 0, cWidth, cHeight);
