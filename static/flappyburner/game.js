@@ -35,12 +35,12 @@ var images = {};
 loadImages();
 
 function loadImages() {
-    let imageList = ["flappybg", "ball", "p1", "p2", "bird", "cactus"];
+    let imageList = ["flappybg", "bird", "cactus"];
     let numOfImages = imageList.length;
     let counter = 0;
     for (img of imageList) {
         images[img] = new Image();
-        images[img].src = `../assets/images/${img}.png`;
+        images[img].src = `assets/images/${img}.png`;
     }
     for (img in images) {
         images[img].onload = function () {
