@@ -40,7 +40,7 @@ function loadImages() {
     let counter = 0;
     for (img of imageList) {
         images[img] = new Image();
-        images[img].src = `assets/images/${img}.png`;
+        images[img].src = `../assets/images/${img}.png`;
     }
     for (img in images) {
         images[img].onload = function () {
