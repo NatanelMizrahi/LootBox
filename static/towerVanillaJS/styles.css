@@ -1,4 +1,4 @@
-#game_canvas{
+/*#game_canvas{
     position: relative;
     float:left;
     border-radius: 7px;
@@ -7,5 +7,18 @@
     max-width: 100%;
     width: 100%;
     height:100%;
-
+    left: 25%;
+}*/
+html, body,#game_canvas {
+    width: 100%;
+    height:100%;
+}
+#game_canvas{
+    position: relative;
+    float:left;
+    border-radius: 7px;
+    background: black;
+    width: 80%;
+    height:100%;
+    left: 25%;
 }
