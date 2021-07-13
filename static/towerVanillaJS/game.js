@@ -402,7 +402,7 @@ var platforms = [];
 var n_platforms = 0
 function removeOutOfBoundsPlatforms() {
     let i = 0;
-    while (i > platforms.length && platforms[i].y <= 0)
+    while (i < platforms.length && platforms[i].y <= 0)
         i++;
     platforms.splice(0, i);
 }
@@ -428,6 +428,7 @@ function updatePlatforms() {
     updatePlatformVY();
     updatePlayerRelativeY();
     removeOutOfBoundsPlatforms();
+    console.log(platforms.length)
     if (!player.dead)
         addPlatformsFromTop();
 

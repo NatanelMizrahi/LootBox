@@ -6,9 +6,9 @@ from datetime import datetime
 class SerialBusManager:
     # CLASS CONFIG
     PRODUCTION_MODE = False
-    TARGET_RPM = 0.3
+    TARGET_RPM = 0.5
     DEFAULT_SENSITIVITY: float = 0.05
-    MIN_SENSITIVITY: float = 0.005
+    MIN_SENSITIVITY: float = 0.001
     MAX_SENSITIVITY: float = 0.100
     DELAY: float = 0.3
     RPS: float = 4
@@ -67,4 +67,4 @@ class SerialBusManager:
         rpm_ratio = self.TARGET_RPM / actual_rpm
         self.sensitivity *= rpm_ratio
         self.sensitivity = min(max(self.sensitivity, self.MIN_SENSITIVITY), self.MAX_SENSITIVITY)
-        print(f'{rotation_degrees :.2f}˚| dt(m) {time_delta_minutes: .2f} | {actual_rpm: .2f} RPM| sens=f{self.sensitivity :.2f}')
+        print(f'{rotation_degrees :.2f}˚| dt(m) {time_delta_minutes: .2f} | {actual_rpm: .2f} RPM| sens={self.sensitivity :.3f}')

@@ -293,14 +293,24 @@ function playGame(){
     const WINDOW_WIDTH_CANVAS_RATIO= 0.7;
     const WINDOW_HEIGHT_CANVAS_RATIO = 0.9;
     var ctx=canvas.getContext('2d');
-
+    var scaleByWidth =true;
     const aspectRatio=images.background.width/images.background.height;
-    const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
-    const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
-    let scaledMaxWidth = maxHeight * aspectRatio;
-    let scaleFactor = Math.min(1, maxWidth/scaledMaxWidth);
-    canvas.width=scaledMaxWidth * scaleFactor;
-    canvas.height=maxHeight * scaleFactor;
+    if (aspectRatio * window.innerHeight > window.innerWidth) scaleByWidth = false;
+    console.log(aspectRatio,window.innerHeight, window.innerWidth, aspectRatio * window.innerHeight, aspectRatio * window.innerHeight > window.innerWidth);
+    if (scaleByWidth){
+        canvas.width = window.innerWidth;
+        canvas.height = canvas.width / aspectRatio;
+    } else {
+        canvas.height = window.innerHeight;
+        canvas.width = aspectRatio * canvas.height;
+    }
+    canvas.height *= 0.9;
+//    const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
+//    const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
+//    let scaledMaxWidth = maxHeight * aspectRatio;
+//    let scaleFactor = Math.min(1, maxWidth/scaledMaxWidth);
+//    canvas.width=scaledMaxWidth * scaleFactor;
+//    canvas.height=maxHeight * scaleFactor;
 
     //Settings
     var fps		=	35;
