@@ -9,16 +9,41 @@ app = Flask(__name__, static_url_path='/static')
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+highscores = {}
 
-@app.route('/score')
+
+def to_json(resp, code):
+    return json.dumps(resp), code, {'ContentType': 'application/json'}
+
+
+@app.route('/score', methods=['POST'])
 def post_score():
     try:
-        score = float(request.args.get('score'))
+        score = float(request.json['score'])
+        print(f'score={score}')
         serial_manager.rotate_motor(score)
-        return (json.dumps({'success': True, 'score': score}), 200, {'ContentType': 'application/json'})
+        return to_json({'success': True, 'score': score}, 200)
     except Exception as e:
         print(e)
-        return (json.dumps({'success': False, 'msg': f'{e}'}), 500, {'ContentType': 'application/json'})
+        return to_json({'success': False, 'msg': f'{e}'}, 500)
+
+
+@app.route('/highscore', methods=['GET', 'POST'])
+def highscore_handler():
+        if request.method == 'GET':
+            game = request.args.get('game')
+            highscore = highscores.get(game, 0)
+            return to_json(highscore, 200)
+        else:
+            game = request.json.get('game')
+            try:
+                score = int(request.json['score'])
+                curr_highscore = highscores.get(game,0)
+                highscores[game] = max(curr_highscore, score)
+            except Exception as e:
+                print(e)
+            finally:
+                return to_json(highscores.get(game, 0), 200)
 
 
 @app.route('/game/<game>', methods=['GET'])
@@ -26,7 +51,9 @@ def load_game(game):
     try:
         return redirect(f'../static/{game}/index.html')
     except:
-        return (json.dumps(f"No such game:{game}"), 500, {'ContentType': 'application/json'})
+        return to_json(f"No such game:{game}", 500)
 
-
-app.run()
+try:
+    app.run()
+finally:
+    serial_manager.analyze()

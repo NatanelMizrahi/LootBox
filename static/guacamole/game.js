@@ -1,9 +1,11 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../scoreAPI.js'
 
+
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
 const UP = 38;
+const DOWN = 40;
 const RESTART_KEY_CODE = 82;
 
 // animation
@@ -30,6 +32,7 @@ const stateFrames = {
 const SUBMIT_SCORE_DELTA = 10;
 
 // PHYSICS
+const ALLOW_WRAP = true;
 const G = 2;
 const FRICTION = 1.2;
 
@@ -49,7 +52,7 @@ const MOVING_PLATFORM_VX = 1;
 var platform_vy = PLATFORM_INITIAL_VY;
 
 // misc.
-const PRODUCTION = true;
+const PRODUCTION = false;
 const THEME_ON = true;
 const SHOW_HITBOX = false;
 const FLAMES_ON_DEAD_ONLY = false;
@@ -79,10 +82,24 @@ const FALLING_PLATFORM_CHANCE = 1;
 
 const images = {};
 
+
+
+const HOLE_W = 50;
+const HOLE_H = 50;
+const HOLE_RX = HOLE_W/2;
+const HOLE_RY = HOLE_H/4;
+const AVO_H =  HOLE_H;
+const AVO_W =  HOLE_W;
+const PADDING = HOLE_H;
+const HOLES_OFFSET_X = PADDING;
+const HOLES_OFFSET_Y = 100 + PADDING;
+const N_HOLES_X = 6;
+const N_HOLES_Y = 4;
+
 const canvas = document.getElementById('game_canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth * 0.75;
-canvas.height = window.innerHeight;
+canvas.width = N_HOLES_X * HOLE_W + PADDING + HOLES_OFFSET_X;
+canvas.height = N_HOLES_Y * HOLE_H + PADDING + HOLES_OFFSET_Y;
 const cWidth = canvas.width;
 const cHeight = canvas.height;
 
@@ -127,94 +144,59 @@ var player = {
     color: 'red',
     dead: false,
     r: PLAYER_R,
-    x: cWidth / 2,
-    y: cHeight,
+    x: HOLES_OFFSET_X,
+    y: HOLES_OFFSET_Y,
+    w: HOLE_W,
+    h: HOLE_H,
     vx: 0,
     vy: 0,
-    ax: 0,
-    ay: -G,
-    state: IDLE,
-    running: false,
-    jumping: false,
-    platform: null,
-    left: function() {
-        this.vx=0;
-        this.ax = -PLAYER_AX;
-        this.running = true;
-    },
-    right: function() {
-        this.vx=0;
-        this.ax = PLAYER_AX;
-        this.running = true;
-    },
-    stop: function() {
-        this.running = false;
-        if (!this.jumping)
-            this.ax = -1 * Math.sign(this.ax) * FRICTION;
-    },
-    jump: function() {
-        if (!this.jumping && ! this.dead) {
-            this.vy = PLAYER_JUMP_VY + VX_WALLJUMP_FACT * this.vx * this.vx;
-            this.jumping = true;
-            this.platform = null;
-        }
-    },
-    isWallCollision: function() {
-        return (this.x - this.r <= WALL_WIDTH) || (this.x + this.r >= (cWidth - WALL_WIDTH));
-    },
-    collideWall: function() {
-        this.vx = -this.vx;
-        if (this.jumping)
-            this.vy += VX_JUMP_FACT * this.vx * this.vx;
-        this.ax = -this.ax;
-        if (this.x - this.r <= WALL_WIDTH) {
-            this.x = this.r + WALL_WIDTH;
-        }
-        if (this.x + this.r >= (cWidth - WALL_WIDTH)) {
-            this.x = (cWidth - WALL_WIDTH) - this.r;
-        }
-    },
-    checkFloorHit: function() {
-        if (this.y - this.r <= 0) {
-            if (!this.jumping)
-                this.vy = 0;
-            this.y = this.r;
-            if (!this.dead){
-                submitHighScore();
+    boardX: 0,
+    boardY: 0,
+    tgtX: HOLES_OFFSET_X,
+    tgtY: HOLES_OFFSET_Y,
+    movingX: false,
+    movingY: false,
+    moveX: function(direction){
+        this.movingX = true;
+        let delta = (direction == RIGHT) ? 1 : -1;
+        let prevBoardX = this.boardX;
+        this.boardX += delta;
+        if (this.boardX < 0 || this.boardX >= N_HOLES_X) {
+            if (ALLOW_WRAP){
+                this.boardX = (this.boardX+ N_HOLES_X) % N_HOLES_X;
+            } else {
+                this.boardX = clamp(this.boardX, 0, N_HOLES_X-1);
             }
-            this.jumping = false;
-            this.dead = true;
-            this.vy = PLAYER_DEAD_VY;
-            this.ay = 0;
-
         }
+        this.vx = (prevBoardX < this.boardX) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
+        this.tgtX = HOLES_OFFSET_X + this.boardX * HOLE_W;
     },
-    isOnPlatform: function(platform) {
-        return this.isOnPlatformX(platform) && this.isOnPlatformY(platform);
+    moveY: function(direction){
+        this.movingY = true;
+        let prevBoardY = this.boardY;
+        let delta = (direction == DOWN) ? 1 : -1;
+        this.boardY += delta;
+        if (this.boardY < 0 || this.boardY >= N_HOLES_Y) {
+            if (ALLOW_WRAP){
+                this.boardY = (this.boardY+ N_HOLES_Y) % N_HOLES_Y;
+            } else {
+                this.boardY = clamp(this.boardY, 0, N_HOLES_Y-1);
+            }
+        }
+        this.vy = (prevBoardY < this.boardY) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
+        this.tgtY = HOLES_OFFSET_Y + this.boardY * HOLE_H;
     },
-    isOnPlatformX: function(platform) {
-        return (this.x >= platform.x) && (this.x <= platform.x + platform.w);
-    },
-    isOnPlatformY: function(platform) {
-        let goingDownOrSideWays = (this.vy <= 0);
-        let bottomY = (this.y - this.r);
-        let bottomNextY = (this.nextY() - this.r);
-        let onPlatformY = ((bottomY >= platform.y) && (bottomNextY <= platform.y));
-        return goingDownOrSideWays && onPlatformY;
-    },
-
-    alignPlatformY: function(platform) {
-        this.vy = 0;
-        this.y = platform.y + this.r;
-        this.platform = platform;
-        this.jumping = false;
-    },
-    alignPlatformX: function(platform) {
-        this.x += platform.vx;
-    },
-
-    stopped: function() {
-        return !this.running && ((this.ax < 0 && this.vx <= 0) || (this.ax > 0 && this.vx >= 0));
+    move: function(direction) {
+        switch(direction){
+            case UP:
+            case DOWN:
+                this.moveY(direction);
+                break;
+            case LEFT:
+            case RIGHT:
+                this.moveX(direction);
+                break;
+        }
     },
     nextX: function() {
         return this.x + this.vx;
@@ -222,82 +204,46 @@ var player = {
     nextY: function() {
         return this.y + this.vy;
     },
-    checkCurrPlatform: function() {
-        if (this.platform != null) {
-            if (!this.isOnPlatformX(this.platform)) {
-                this.platform = null;
+    updateCoords: function(){
+        if(this.movingX) {
+            let nextX = this.nextX();
+            if ((this.x <= this.tgtX && this.tgtX <= nextX) || (this.x >= this.tgtX && this.tgtX >= nextX)){
+                this.x = this.tgtX;
+                this.movingX = 0;
+                this.vx = 0;
             } else {
-                this.platform.hit();
-                this.alignPlatformY(this.platform);
-                this.alignPlatformX(this.platform);
+                this.x += this.vx;
             }
         }
-    },
-    checkNewPlatform: function() {
-        if (this.platform != null)
-            return;
-        for (let platform of platforms) {
-            if (this.isOnPlatform(platform)) {
-                this.alignPlatformY(platform);
-                break;
+        if(this.movingY) {
+            let nextY = this.nextY();
+            if ((this.y <= this.tgtY && this.tgtY <= nextY) || (this.y >= this.tgtY && this.tgtY >= nextY)){
+                this.y = this.tgtY;
+                this.movingY = 0;
+                this.vy = 0;
+            } else {
+                this.y += this.vy;
             }
         }
-    },
-    move: function() {
-        this.vy = this.vy + this.ay;
-        this.vx = clamp(this.vx + this.ax, -MAX_PLAYER_VX, +MAX_PLAYER_VX);
-        if (this.stopped()) {
-            this.vx = 0
-            this.ax = 0
-        }
-        this.x = this.nextX();
-        if (this.isWallCollision())
-            this.collideWall();
-
-        this.checkCurrPlatform();
-        this.checkNewPlatform();
-
-        this.y = this.nextY();
-        this.checkFloorHit();
-        this.updateState();
-    },
-    updateState: function() {
-        let prevState = this.state;
-        if (this.dead) {
-            this.state = DEAD;
-        } else if (this.jumping) {
-            this.state = JUMPING;
-        } else if (this.vx != 0) {
-            this.state = RUNNING;
-        } else {
-            this.state = IDLE;
-        }
-        if (prevState != this.state)
-            this.animationFrameArr = stateFrames[this.state];
     },
     // player animation
     currFrameIdx: 0,
     animationFrameArr: stateFrames[IDLE],
     animationIntervalCounter: PLAYER_ANIMATION_INTERVAL,
     draw: function() {
-        this.move();
-        let invert = (this.vx < 0);
+        this.updateCoords();
         let img = images.player;
         let currFrame = this.animationFrameArr[this.currFrameIdx];
         let xOffset = (currFrame % N_PLAYER_FRAMES);
         let yOffset = Math.floor(currFrame / N_PLAYER_FRAMES);
-        if (invert) {
-            xOffset = (N_PLAYER_FRAMES - 1) - xOffset;
-            img = images.player_inv;
-        }
-        if (SHOW_HITBOX)
-            circle(this.x, this.y, this.r, this.color);
         let fw = img.width / N_PLAYER_FRAMES;
         let fh = img.height / N_PLAYER_FRAMES;
         let fx = xOffset * fw;
         let fy = yOffset * fh;
         let fr = SCALE_PLAYER_IMG * this.r;
-        ctx.drawImage(img, fx, fy, fw, fh, this.x - fr, cHeight - (this.y + fr), fr * 2, fr * 2);
+        rect(this.x, this.y,this.w, this.h, this.color);
+        ctx.drawImage(img, fx, fy, fw, fh, this.x, this.y), this., fr * 2);
+
         this.animationIntervalCounter--;
         if (this.animationIntervalCounter == 0) {
             this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
@@ -329,7 +275,7 @@ function randInt(min, max) {
 }
 
 function randFloat(min, max) {
-    return (Math.random() * (max - min + 1)) + min;
+    return (Math.random() * (max - min)) + min;
 }
 
 function clamp(val, min, max) {
@@ -522,18 +468,6 @@ function drawScoreBoard(){
 
 // key Press EventListeners
 window.addEventListener('keydown', keyDown, false);
-window.addEventListener('keyup', keyUp, false);
-
-var rightKeyPressed = false;
-var leftKeyPressed = false;
-
-function keyUp(e) {
-    var key = e.which || e.keyCode;
-    if (key == RIGHT) rightKeyPressed = false;
-    if (key == LEFT)  leftKeyPressed = false;
-    if (!leftKeyPressed && !rightKeyPressed)
-        player.stop();
-}
 
 function keyDown(e) {
     if (e.repeat) return;
@@ -541,20 +475,10 @@ function keyDown(e) {
     if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
     switch (key) {
         case UP:
-            player.jump();
-            break;
-        case RIGHT:
-            rightKeyPressed= true;
-            player.right();
-            break;
+        case DOWN:
         case LEFT:
-            leftKeyPressed= true;
-            player.left();
-            break;
-        case RESTART_KEY_CODE:
-            if (player.dead) location.reload();
-            break;
-        default:
+        case RIGHT:
+            player.move(key);
             break;
     }
 }
@@ -562,17 +486,19 @@ function keyDown(e) {
 // render
 function render() {
     drawBG();
-    drawWalls();
+//    drawWalls();
     drawScoreBoard();
-    drawFlames();
+//    drawFlames();
+    drawHoles();
+    drawAvocados();
     player.draw();
-    drawPlatforms();
+//    drawPlatforms();
     requestAnimationFrame(render);
 }
 
 
 function loadImages() {
-    let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
+    let imageList = ["player", "player_inv", "flames", "wall", "log", "background", "hole", "avocado", "boss"];
     let imageLoadedPromises = [];
     for (let img of imageList) {
         images[img] = new Image();
@@ -583,6 +509,8 @@ function loadImages() {
         initFlames();
         initPlatforms();
         initWalls();
+        initHoles();
+        initAvocados();
         initBackground();
         initHighScore();
         requestAnimationFrame(render);
@@ -594,3 +522,109 @@ function main() {
 }
 
 main();
+
+
+
+
+function createHolePattern(){
+  var canvas1 = document.createElement( 'canvas' );
+  var ctx1 = canvas1.getContext( '2d' );
+  var holeAspectRatio  = images.hole.width/ images.hole.height;
+
+  canvas1.width = HOLE_W;
+  canvas1.height = HOLE_H;
+  ctx1.drawImage(images.hole, 0, 0, canvas1.width, canvas1.height );
+  return ctx.createPattern( canvas1, 'repeat');
+};
+
+var holePattern;
+function initHoles(){
+    holePattern = createHolePattern();
+}
+function drawHoles(){
+  ctx.fillStyle = holePattern;
+  ctx.fillRect(HOLES_OFFSET_X, HOLES_OFFSET_Y, N_HOLES_X * HOLE_W, N_HOLES_Y * HOLE_H);
+}
+
+
+var avocados;
+
+const MIN_AVO_SPEED = 2;
+const MAX_AVO_SPEED = 5;
+const MIN_AVO_DELAY = 50;
+const MAX_AVO_DELAY = 150;
+const HITTABLE_THRESHOLD = 0.25;
+
+function initAvocados(){
+    avocados = initAvocadosMatrix();
+}
+function initAvocadosMatrix(){
+    let arr = [];
+    for (let i = 0; i< N_HOLES_Y; i++){
+        arr.push([]);
+        for (let j = 0; j< N_HOLES_X; j++){
+            arr[i].push(null);
+        }
+    }
+    return arr;
+}
+const SPAWN_CHANCE = 0.001;
+function drawAvocados(){
+    for (let i = 0; i< N_HOLES_Y; i++){
+        for (let j = 0; j< N_HOLES_X; j++){
+            if (avocados[i][j] == null && (randFloat(0,1) < SPAWN_CHANCE)){
+                addAvocado(i,j);
+            }
+            if (avocados[i][j] != null)
+                avocados[i][j].draw();
+        }
+    }
+}
+function addAvocado(i,j){
+    console.log(i,j);
+    let avocado = {
+        img: images.avocado,
+        x: j * HOLE_W + HOLES_OFFSET_X,
+        y: i * HOLE_H + HOLES_OFFSET_Y + AVO_H,
+        w: AVO_W,
+        h: AVO_H,
+        boardX :j,
+        boardY :i,
+        delay: randInt(MIN_AVO_DELAY,MAX_AVO_DELAY),
+        speed: randInt(MIN_AVO_SPEED,MAX_AVO_SPEED),
+        visible : true,
+        hittable: true,
+        move: function(){
+        },
+        draw: function (){
+//            rect(this.x, this.y, this.w, this.h, 'black');
+            this.delay--;
+            if (this.delay == 0)
+                this.die();
+            else
+                this.crop();
+        },
+        crop: function (){
+            rect(this.x, this.y, this.w, this.h, 'black');
+//            ctx.save();
+//            ctx.beginPath();
+////            rect(this.x, this.y, this.w, this.h);
+//            let cw = false;
+//            let holeCenterX = this.x + HOLE_W/2;
+//            let holeCenterY = this.y - HOLE_H/2;
+//            ctx.ellipse(holeCenterX ,holeCenterY, HOLE_RX, HOLE_RY, 0, 0, Math.PI, cw);
+//            ctx.fill();
+//            ctx.closePath();
+//
+////            ctx.clip();
+////            ctx.drawImage(this.x, this.y, this.w, this.h);
+//            ctx.restore();
+        },
+        die: function(){
+            this.visible = false;
+            console.log(this.boardY,this.boardX, "DEAD" );
+            avocados[this.boardY][this.boardX] = null;
+        }
+    }
+    avocados[i][j] = avocado;
+}
