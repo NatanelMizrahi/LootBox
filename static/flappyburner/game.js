@@ -1,3 +1,5 @@
+import {postScore, getGameHighScore, postGameHighScore} from '../scoreAPI.js'
+
 // const fetch = require('node-fetch');
 const PORT = 5000
 const HTTP_HEADER = {
@@ -7,6 +9,32 @@ const HTTP_HEADER = {
     'User-Agent': '*',
 };
 
+
+
+// SCORE
+const SUBMIT_SCORE_DELTA = 10;
+
+// scoreboard
+var highscore = 0;
+var score = 0;
+var prevScore = 0;
+function updateScore(val) {
+    score = Math.max(val,score);
+    if (score - prevScore > SUBMIT_SCORE_DELTA) {
+        let normalizedScore = (score - prevScore)/SUBMIT_SCORE_DELTA;
+        postScore(normalizedScore);
+        prevScore = score;
+    }
+}
+
+function initHighScore(){
+    getGameHighScore('flappyburner')
+    .then(gameHighScore => highscore = gameHighScore);
+}
+function submitHighScore(){
+    postGameHighScore('flappyburner', score)
+    .then(gameHighScore => highscore = gameHighScore);
+}
 function range(start, stop, step) {
     if (typeof stop == 'undefined') {
         // one param defined
@@ -36,51 +64,28 @@ loadImages();
 
 function loadImages() {
     let imageList = ["flappybg", "bird", "cactus"];
-    let numOfImages = imageList.length;
-    let counter = 0;
-    for (img of imageList) {
+    let imageLoadedPromises = [];
+    for (let img of imageList) {
         images[img] = new Image();
         images[img].src = `assets/images/${img}.png`;
+        imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
     }
-    for (img in images) {
-        images[img].onload = function () {
-            this.imageReady = true;
-            counter++;
-            $('#imgLoad').text(Math.floor(counter / numOfImages * 100));
-            if (counter == numOfImages) isLoaded();
-        }
-    }
+    Promise.all(imageLoadedPromises).then(loaded => {
+        playGame();
+    });
 }
 
-function hideLoadingScreen() {
-    $('#loadingMenu').hide();
-    // $("#loadScreenPlayBtn").hide();
-}
 
-function isLoaded() {
-    var imagesLoaded = true;
-    for (img in images) {
-        if (!images[img].imageReady) {
-            imagesLoaded = false;
-        }
-    }
-    if (imagesLoaded) {
-        $("#loadScreenPlayBtn").show();
-        $("#loadScreenPlayBtn").click(playGame);
-    }
-
-}
 
 function playGame() {
-    hideLoadingScreen();
     var canvas = document.getElementById('game_canvas');
 
     //canvas size
     const WINDOW_WIDTH_CANVAS_RATIO = 0.7;
-    const WINDOW_HEIGHT_CANVAS_RATIO = 0.9;
+    const WINDOW_HEIGHT_CANVAS_RATIO = 1;
     var ctx = canvas.getContext('2d');
 
-    const aspectRatio = images.flappybg.width / images.flappybg.height;
+    const aspectRatio = 16/9 // images.flappybg.width / images.flappybg.height;
     const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
     const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
     let scaledMaxWidth = maxHeight * aspectRatio;
@@ -89,26 +94,15 @@ function playGame() {
     canvas.height = maxHeight * scaleFactor;
 
     //Settings
-    var fps = 35;
     var cWidth = canvas.width;
     var cHeight = canvas.height;
     const stoneHeight = 55;
     var pHeight = 85;
     var pWidth = 15;
-    var spacing = 10;
-    var strpSize = 15;
-    var stripClr = "white";
-    var playerSpeed = 20;
 
     //Controls
-    var default_settings = true;
-    var multiplayer = false;
     var themeOn = true;
-    const showHitBox = false;
-    var roundEdges = true;
-    var default_speed = 6;
-    var difficulty = 1.5;
-    var autoplay = true;
+    const showHitBox = true;
     var paused = false;
 
     //game render interval
@@ -138,73 +132,10 @@ function playGame() {
     const cactusW = images.cactus.width / numCactusW;
     const cactusH = images.cactus.height / numCactusH;
 
-    //Controls- functions
-    var pauseMenu = document.getElementById('pauseMenu');
-    var pauseBtn = document.getElementById('pauseBtn');
-    var message = document.getElementById('message');
-
-    function pause(msg, buttonTxt) {
-        paused = !paused;
-        message.innerHTML = msg;
-        pauseBtn.innerHTML = buttonTxt;
-        pauseMenu.style.display = paused ? "inline-block" : "none";
-        pauseBtn.onclick = function () {
-            pauseMenu.style.display = "none";
-            paused = false;
-            resetGameState()
-        };
-    }
-
-
     function onEndGame() {
-        pause("Game Over", "New Game")
-    }
-
-    function setDifficulty(e) {
-        e.target.blur();
-        switch (e.target.value) {
-            case 'easy':
-                difficulty = 1.5;
-                break;
-            case 'medium':
-                difficulty = 2;
-                break;
-            case 'hard':
-                difficulty = 3;
-                break;
-            case 'insane':
-                difficulty = 3.5;
-                break;
-        }
-        if (!multiplayer) {
-            p2.speed = 5 * difficulty;
-        }
-
-        ball.xSpeed *= difficulty;
-        ball.ySpeed *= difficulty;
-    }
-
-    function setKey(e) {
-        var key = e.which || e.keyCode;
-        if (key == 9 || key == 27 || key == 13) return;	//prevent 'tab','esc', 'enter' keys
-        e.preventDefault();
-        this.value = e.key;
-        switch (this.id) {
-            case 'p1_upkey':
-                p1.upkey = key;
-                break;
-            case 'p1_downkey':
-                p1.downkey = key;
-                break;
-            case 'p2_upkey':
-                p2.upkey = key;
-                break;
-            case 'p2_downkey':
-                p2.downkey = key;
-                break;
-        }
-        this.value = this.value.indexOf('Arrow') == -1 ? this.value : this.value.substring(5);
-        this.blur();
+        submitHighScore()
+        resetGameState()
+//        player.dead = true;
     }
 
     function nowSec() {
@@ -225,10 +156,9 @@ function playGame() {
         obstacles = []
         player.distanceCovered = 0
         player.y = cHeight / 2
-        player.vy = 0
+        player.vy = player.InitialVY
         previousRenderTime = nowSec();
         prevGenDistance = 0;
-        setTimeout(playGame, 0)
 
     }
 
@@ -244,19 +174,11 @@ function playGame() {
         renderPlayer(now, dt);
         renderObstacles(now, dt);
         const endGame = computeHitBox();
-        scoreBoard(now, dt);
+        scoreBoard(now, dt, endGame);
 
         if (endGame) onEndGame();
 
         requestAnimationFrame(render);
-        // Old Game below
-
-        // movePlayers();
-        // drawPlayers();
-        // scoreBoard();
-        // middleLine();
-        // moveBall();
-
     }
 
     const sceneSpeed = 300;
@@ -339,15 +261,15 @@ function playGame() {
         x: 100,
         size: pHeight,
         radius: pHeight * 0.5,
-        speed: playerSpeed,
         reverse: false,
         color: 'white',
         score: 0,
         scale: 0.5,
         up: false,
-        vy: 0,
+        vy: -700,
+        InitialVY: -700,
         upkey: 87,	//W
-        yMax: cHeight * 0.9,
+        yMax: cHeight,
         yMin: cHeight * 0.1,
         distanceCovered: 0,
         getCenter: function () {
@@ -359,7 +281,7 @@ function playGame() {
 
 
         move: function (dt) {
-            const acceleration = 2000.0 * (this.up ? -1.0 : 1.0) // pixels / s^2
+            const acceleration = 1500.0 * (this.up ? -1.0 : 1.0) // pixels / s^2
             this.vy = this.vy + acceleration * dt
             const new_y = this.y + this.vy * dt + 0.5 * acceleration * dt * dt
             this.y = Math.min(Math.max(new_y, this.yMin), this.yMax)
@@ -367,21 +289,31 @@ function playGame() {
         },
 
         onUpKeyPress: function (e) {
-            if (e.keyCode !== this.upkey) return;
+            // if (e.keyCode !== this.upkey) return;
+            if (e.repeat) return;
+//            var key = e.which || e.keyCode;
+//            if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
+//            if (key == RESTART_KEY_CODE && this.dead) resetGameState()
             this.up = true
             this.vy = 0
         },
         onUpKeyRelease: function (e) {
-            if (e.keyCode !== this.upkey) return;
+            // if (e.keyCode !== this.upkey) return;
             this.up = false
         },
         calcScore: function (dt) {
             this.distanceCovered += sceneSpeed * dt
-            this.score = Math.floor(this.distanceCovered * 0.01)
+            this.score = Math.floor(this.distanceCovered * 0.02)
+            if (this.score % 20 == 0) {
+                updateScore(this.score / 2);
+            }
         },
         hitBoxFactor: 0.7,
         hitBoxRadius: function () {
             return this.radius * this.hitBoxFactor
+        },
+        touchesFloor: function () {
+            return (this.y + this.radius) >= cHeight;
         }
     }
 
@@ -414,11 +346,13 @@ function playGame() {
             }
 
         })
+        if (player.touchesFloor()){
+            endGame = true;
+        }
         return endGame;
     }
 
     let seemX = 0
-
     function drawBG(now, dt) {
         if (themeOn) {
             seemX = (seemX - sceneSpeed * dt) % cWidth
@@ -433,7 +367,7 @@ function playGame() {
         }
     }
 
-    function scoreBoard(now, dt) {
+    function scoreBoard(now, dt, endGame) {
         ctx.save()
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
@@ -442,12 +376,6 @@ function playGame() {
         ctx.font = '80px arial';
         ctx.fillText(player.score, 3 * 0.25 * cWidth, cHeight / 8 + 70);
         ctx.restore()
-    }
-
-
-    //Game logics
-    function postScore() {
-        $.get(`http://localhost:${PORT}/score`, {score: difficulty}, console.log);
     }
 
     //Canvas shapes
@@ -466,68 +394,6 @@ function playGame() {
         ctx.fill();
     }
 
-    function rect2(xPos, yPos, width, height, color, invertX) {
-        if (invertX) {
-            xPos = -xPos + cWidth - width;
-        }
-        ctx.beginPath();
-        ctx.fillStyle = color;
-        ctx.moveTo(xPos, yPos);
-        ctx.lineTo(xPos, yPos + height);
-        ctx.arc(xPos + width / 2, yPos + height, width / 2, Math.PI, 0, true);
-        ctx.lineTo(xPos + width, yPos);
-        ctx.arc(xPos + width / 2, yPos, width / 2, 0, Math.PI, true);
-        ctx.fill();
-    }
 
-    function middleLine() {
-        var x = 0;
-        ctx.beginPath();
-        ctx.strokeStyle = stripClr;
-        ctx.lineWidth = 2;
-        while (x < cHeight) {
-            x += strpSize;
-            ctx.lineTo(cWidth / 2, x);
-            x += strpSize;
-            ctx.moveTo(cWidth / 2, x);
-        }
-        ctx.stroke();
-    }
 
-    //Sound controls
-
-    /*	0: p1 score;
-    1: p2 score;
-    2: p1 win;
-    3: p2 win */
-    function playRandomAudio(event) {
-        if (!themeOn) return;
-        var length = audios[event].length;
-        var index = Math.floor(Math.random() * length);
-        audios[event][index].play();
-    }
-
-    $(document).ready(function () {
-        $('#theme').prop('volume', 0.2);
-        $('#theme').prop('autoplay', autoplay ? true : false);
-        $('#theme').prop('loop', true);
-        $('#theme').prop('currentTime', 8.4);
-
-        $('#mute_btn').click(function () {
-            let muted = $('#theme').prop("muted");
-            $(this).toggleClass("glyphicon glyphicon-volume-up");
-            $(this).toggleClass("glyphicon glyphicon-volume-off");
-            $('#theme').prop("muted", !muted);
-            if (muted)
-                $('#theme')[0].play();
-            else
-                $('#theme')[0].pause();
-        });
-        $('#volume_up').click(function () {
-            $('#theme')[0].volume += 0.05;
-        });
-        $('#volume_down').click(function () {
-            $('#theme')[0].volume -= 0.05;
-        });
-    });
 }
