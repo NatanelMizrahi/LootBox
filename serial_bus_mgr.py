@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 
 class SerialBusManager:
     # CLASS CONFIG
-    PRODUCTION_MODE = False
-    TARGET_RPM = 0.5
+    PRODUCTION_MODE = True
+    TARGET_RPM = 0.3
     DEFAULT_SENSITIVITY: float = 0.05
     MIN_SENSITIVITY: float = 0.01
     MAX_SENSITIVITY: float = 0.100
     DELAY: float = 0.3
-    RPS: float = 4
+    RPS: float = 3
     # SERIAL_BUS: str =  '/dev/cu.usbserial-1460'
     SERIAL_BUS: str = '/dev/cu.usbserial-AK08KOBB'
     MOTOR_CTRL_PIN_NOS: list = [4, 5, 6, 7]
@@ -76,7 +76,7 @@ class SerialBusManager:
     def log_event(self, ts, ts_minutes, rotation_degrees, rotations, rpm, rpm_ratio):
         self.events.append({
             "ts": ts,
-            "curr rotation": rotation_degrees/360,
+            "curr rotation": rotation_degrees,
             "# rotations": rotations,
             "RPM": rpm,
             "RPM ratio": rpm_ratio,
