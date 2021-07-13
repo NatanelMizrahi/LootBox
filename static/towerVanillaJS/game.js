@@ -13,13 +13,6 @@ const FLAME_ANIMATION_INTERVAL = 3;
 const N_PLAYER_FRAMES = 16;
 const MAX_PLAYER_Y_MARGIN = 50;
 
-// platforms
-const PLATFORMS_Y_INTERVAL = 100;
-const MIN_PLATFORM_W = 100;
-const MAX_PLATFORM_W = 400;
-const MOVING_PLATFORM_CHANCE = 0.3;
-const FALLING_PLATFORM_CHANCE = 1;
-
 //STATES
 const IDLE = "IDLE";
 const DEAD = "DEAD";
@@ -66,7 +59,7 @@ const gameOverMessage = `GAME OVER (press ${String.fromCharCode(RESTART_KEY_CODE
 const WALL_WIDTH = 35;
 const PLAYER_R = 20;
 const SCALE_PLAYER_IMG = 1.4;
-const PLATFORM_HEIGHT = 30;
+const PLATFORM_HEIGHT = 1.5 * PLAYER_R;
 
 // flames
 const FLAME_SIZE = 30;
@@ -76,6 +69,13 @@ const N_FLAME_FRAMES_X = 4;
 const N_FLAME_FRAMES_Y = 3;
 const MIN_FLAME_SCALE = 0.7;
 const MAX_FLAME_SCALE = 5;
+
+// platforms
+const PLATFORMS_Y_INTERVAL = 5*PLAYER_R;
+const MIN_PLATFORM_W = 100;
+const MAX_PLATFORM_W = 400;
+const MOVING_PLATFORM_CHANCE = 0.3;
+const FALLING_PLATFORM_CHANCE = 1;
 
 const images = {};
 

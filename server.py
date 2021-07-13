@@ -53,5 +53,7 @@ def load_game(game):
     except:
         return to_json(f"No such game:{game}", 500)
 
-
-app.run()
+try:
+    app.run()
+finally:
+    serial_manager.analyze()
