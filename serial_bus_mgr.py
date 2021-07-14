@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 
 class SerialBusManager:
     # CLASS CONFIG
-    PRODUCTION_MODE = True
+    PRODUCTION_MODE = False
     TARGET_RPM = 0.3
     DEFAULT_SENSITIVITY: float = 0.05
-    MIN_SENSITIVITY: float = 0.01
-    MAX_SENSITIVITY: float = 0.100
+    # MIN_SENSITIVITY: float = 0.01
+    # MAX_SENSITIVITY: float = 0.100
+    MIN_SENSITIVITY = 1
+    MAX_SENSITIVITY = 1
     DELAY: float = 0.3
     RPS: float = 3
     # SERIAL_BUS: str =  '/dev/cu.usbserial-1460'

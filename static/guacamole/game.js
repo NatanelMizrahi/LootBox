@@ -7,25 +7,25 @@ const RIGHT = 39;
 const UP = 38;
 const DOWN = 40;
 const RESTART_KEY_CODE = 82;
+const HIT_KEY = 32; // space
 
 // animation
 const INITIAL_BG_VX = 1;
 const PLAYER_ANIMATION_INTERVAL = 4;
 const FLAME_ANIMATION_INTERVAL = 3;
-const N_PLAYER_FRAMES = 16;
+const N_PLAYER_FRAMES = 4;
 const MAX_PLAYER_Y_MARGIN = 50;
 
 //STATES
 const IDLE = "IDLE";
+const HIT = "HIT"
 const DEAD = "DEAD";
 const JUMPING = "JUMPING";
 const RUNNING = "RUNNING";
 
 const stateFrames = {
     IDLE: [0],
-    JUMPING: range(2 * N_PLAYER_FRAMES + 4, 2 * N_PLAYER_FRAMES + 10),
-    RUNNING: range(1, 1 + 7),
-    DEAD: range(10 * N_PLAYER_FRAMES, 10 * N_PLAYER_FRAMES + 3)
+    HIT: [0,1,1,1,2,2,1,1,1,0]
 };
 
 // SCORE
@@ -86,8 +86,12 @@ const images = {};
 
 const HOLE_W = 50;
 const HOLE_H = 50;
+const MALLET_W = HOLE_W * 1.1;
+const MALLET_H = HOLE_H * 1.1;
 const HOLE_RX = HOLE_W/2;
 const HOLE_RY = HOLE_H/4;
+const MALLET_OFFSET_X = -HOLE_W / 4;
+const MALLET_OFFSET_Y = -HOLE_H / 2;
 const AVO_H =  HOLE_H;
 const AVO_W =  HOLE_W;
 const PADDING = HOLE_H;
@@ -146,8 +150,8 @@ var player = {
     r: PLAYER_R,
     x: HOLES_OFFSET_X,
     y: HOLES_OFFSET_Y,
-    w: HOLE_W,
-    h: HOLE_H,
+    w: MALLET_W,
+    h: MALLET_H,
     vx: 0,
     vy: 0,
     boardX: 0,
@@ -156,6 +160,13 @@ var player = {
     tgtY: HOLES_OFFSET_Y,
     movingX: false,
     movingY: false,
+    hit: function(){
+        this.state = HIT;
+        this.animationFrameArr = stateFrames[HIT];
+        let avocadoInHole = avocados[this.boardY][this.boardX];
+        if (avocadoInHole != null)
+            avocadoInHole.hit();
+    },
     moveX: function(direction){
         this.movingX = true;
         let delta = (direction == RIGHT) ? 1 : -1;
@@ -204,6 +215,12 @@ var player = {
     nextY: function() {
         return this.y + this.vy;
     },
+    checkIdle: function(){
+        if (this.state == HIT && this.currFrameIdx == 0){
+            this.state = IDLE;
+            this.animationFrameArr = stateFrames[IDLE];
+        }
+    },
     updateCoords: function(){
         if(this.movingX) {
             let nextX = this.nextX();
@@ -232,23 +249,20 @@ var player = {
     animationIntervalCounter: PLAYER_ANIMATION_INTERVAL,
     draw: function() {
         this.updateCoords();
-        let img = images.player;
+        let img = images.mallet;
         let currFrame = this.animationFrameArr[this.currFrameIdx];
         let xOffset = (currFrame % N_PLAYER_FRAMES);
-        let yOffset = Math.floor(currFrame / N_PLAYER_FRAMES);
+        let yOffset = 0;
         let fw = img.width / N_PLAYER_FRAMES;
-        let fh = img.height / N_PLAYER_FRAMES;
+        let fh = img.height;
         let fx = xOffset * fw;
         let fy = yOffset * fh;
         let fr = SCALE_PLAYER_IMG * this.r;
-        rect(this.x, this.y,this.w, this.h, this.color);
-        ctx.drawImage(img, fx, fy, fw, fh, this.x, this.y), this., fr * 2);
-
-        this.animationIntervalCounter--;
-        if (this.animationIntervalCounter == 0) {
-            this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
-            this.animationIntervalCounter = PLAYER_ANIMATION_INTERVAL;
-        }
+        if (SHOW_HITBOX)
+            rect(this.x, this.y, this.w, this.h, this.color);
+        ctx.drawImage(img, fx, fy, fw, fh, this.x + MALLET_OFFSET_X, this.y + + MALLET_OFFSET_Y, this.w, this.h);
+        this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
+        this.checkIdle();
     }
 }
 
@@ -280,149 +294,6 @@ function randFloat(min, max) {
 
 function clamp(val, min, max) {
     return Math.min(Math.max(val, min), max);
-}
-
-// flames
-var FLAMES_W, FLAMES_H, flamesAspectRatio;
-var flameFrames = [];
-var flameFramesSizes = []
-
-function initFlames() {
-    FLAMES_W = images.flames.width / N_FLAME_FRAMES_X;
-    FLAMES_H = images.flames.height / N_FLAME_FRAMES_Y;
-    flamesAspectRatio = FLAMES_H / FLAMES_W;
-    for (let x = 0; x <= cWidth; x += FLAME_SPACE) {
-        flameFrames.push(randInt(0, N_FLAME_FRAMES - 1));
-        flameFramesSizes.push(randFloat(MIN_FLAME_SCALE, MAX_FLAME_SCALE) * FLAME_SIZE);
-    }
-}
-
-function drawFlames() {
-    if (!FLAMES_ON_DEAD_ONLY && !player.dead)
-        return;
-    drawFlames.count = (drawFlames.count + 1) % FLAME_ANIMATION_INTERVAL;
-    for (let i = 0; i < flameFrames.length; i++) {
-        let frameIdx = flameFrames[i];
-        let flameH = flameFramesSizes[i] * flamesAspectRatio;
-        let flameW = flameFramesSizes[i];
-        let xCoord = (frameIdx % N_FLAME_FRAMES_X) * FLAMES_W;
-        let yCoord = Math.floor(frameIdx / N_FLAME_FRAMES_X) * FLAMES_H;
-        ctx.drawImage(images.flames, xCoord, yCoord, FLAMES_W, FLAMES_H, FLAME_SPACE * i, cHeight - flameH * 0.8, flameW, flameH); //TODO check dx, dy
-        if (drawFlames.count == 0)
-            flameFrames[i] = (flameFrames[i] + 1) % N_FLAME_FRAMES;
-    }
-}
-drawFlames.count = 0;
-
-// platforms
-var platforms = [];
-var n_platforms = 0
-
-function removeOutOfBoundsPlatforms() {
-    let i = 0;
-    while (i < platforms.length && platforms[i].y <= 0)
-        i++;
-    platforms.splice(0, i);
-}
-
-
-function createPlatform(image, dx, dy, dWidth, dHeight) {
-    n_platforms++;
-    let moving = randFloat(0,1) < MOVING_PLATFORM_CHANCE;
-    let direction = (randInt(0,1) == 0 ? 1 : -1);
-    let vx = moving ? MOVING_PLATFORM_VX * direction : 0;
-    let falling = !moving && randFloat(0,1) < FALLING_PLATFORM_CHANCE;
-
-    let platform = {
-        img: image,
-        vy: -platform_vy,
-        ay: 0,
-        vx: vx,
-        x: dx, // top left x coord
-        y: dy, // top left y coord
-        w: dWidth,
-        h: dHeight,
-        moving: moving,
-        falling: falling,
-        platformNumber: n_platforms,
-//        direction: randInt(0,1) == 0 ? 1 : -1,
-        move: function() {
-            if (this.ay != 0){
-                this.vy += this.ay;
-            } else {
-                this.vy = -platform_vy;
-            }
-
-            this.y += this.vy;
-            if (this.moving){
-                this.x += this.vx;
-                if (this.x <= WALL_WIDTH) {
-                    this.x = WALL_WIDTH;
-                    this.vx = -this.vx;
-                }
-                if (this.x + this.w >= (cWidth - WALL_WIDTH)) {
-                    this.x = (cWidth - WALL_WIDTH) - this.w;
-                    this.vx = -this.vx;
-                }
-            }
-        },
-        fallCounter: PLATFORM_FALL_DELAY,
-        hit: function(){
-            updateScore(this.platformNumber);
-            if (!this.falling)
-                return;
-            this.fallCounter--;
-            if(this.fallCounter == 0)
-                this.ay = -G/3;
-            else
-                this.y += PLATFORM_PRE_FALL_SHAKE_DY * ((this.fallCounter % 2 == 0) ? -1 : 1);
-        },
-        draw: function() {
-            this.move();
-            ctx.drawImage(this.img, this.x, cHeight - this.y, this.w, this.h);
-        }
-    };
-    platforms.push(platform);
-}
-
-function addPlatformsFromTop() {
-    let topPlatformY = platforms.length == 0 ? 0 : platforms[platforms.length - 1].y;
-    while (topPlatformY <= cHeight) {
-        let platformWidth = randInt(MIN_PLATFORM_W, MAX_PLATFORM_W);
-        let platformOffset = randInt(WALL_WIDTH, cWidth - WALL_WIDTH - platformWidth);
-        topPlatformY += PLATFORMS_Y_INTERVAL;
-        createPlatform(images.log, platformOffset, topPlatformY, platformWidth, PLATFORM_HEIGHT);
-    }
-}
-function updatePlayerRelativeY(){
-    let playerDistanceAboveTopMargin = player.y - (cHeight - MAX_PLAYER_Y_MARGIN);
-    if (playerDistanceAboveTopMargin > 0){
-        player.y -= playerDistanceAboveTopMargin
-        platforms.forEach(platform => platform.y -= playerDistanceAboveTopMargin);
-    }
-}
-
-function updatePlatformVY(){
-    platform_vy += PLATFORM_AY;
-}
-
-function updatePlatforms() {
-    updatePlatformVY();
-    updatePlayerRelativeY();
-    removeOutOfBoundsPlatforms();
-    if (!player.dead)
-        addPlatformsFromTop();
-
-}
-
-function initPlatforms(){
-    platform_vy = PLATFORM_INITIAL_VY;
-    addPlatformsFromTop();
-}
-
-function drawPlatforms() {
-    updatePlatforms();
-    platforms.forEach(p => p.draw());
 }
 
 // scoreboard
@@ -480,25 +351,25 @@ function keyDown(e) {
         case RIGHT:
             player.move(key);
             break;
+        case HIT_KEY:
+            player.hit();
+            break
     }
 }
 
 // render
 function render() {
     drawBG();
-//    drawWalls();
     drawScoreBoard();
-//    drawFlames();
     drawHoles();
     drawAvocados();
     player.draw();
-//    drawPlatforms();
     requestAnimationFrame(render);
 }
 
 
 function loadImages() {
-    let imageList = ["player", "player_inv", "flames", "wall", "log", "background", "hole", "avocado", "boss"];
+    let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow"];
     let imageLoadedPromises = [];
     for (let img of imageList) {
         images[img] = new Image();
@@ -506,9 +377,6 @@ function loadImages() {
         imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
     }
     Promise.all(imageLoadedPromises).then(loaded => {
-        initFlames();
-        initPlatforms();
-        initWalls();
         initHoles();
         initAvocados();
         initBackground();
@@ -551,8 +419,9 @@ var avocados;
 
 const MIN_AVO_SPEED = 2;
 const MAX_AVO_SPEED = 5;
-const MIN_AVO_DELAY = 50;
-const MAX_AVO_DELAY = 150;
+const MIN_AVO_DURATION = 50;
+const MAX_AVO_DURATION = 150;
+const AVO_DELAY = 20;
 const HITTABLE_THRESHOLD = 0.25;
 
 function initAvocados(){
@@ -581,7 +450,6 @@ function drawAvocados(){
     }
 }
 function addAvocado(i,j){
-    console.log(i,j);
     let avocado = {
         img: images.avocado,
         x: j * HOLE_W + HOLES_OFFSET_X,
@@ -590,22 +458,36 @@ function addAvocado(i,j){
         h: AVO_H,
         boardX :j,
         boardY :i,
-        delay: randInt(MIN_AVO_DELAY,MAX_AVO_DELAY),
+        duration: randInt(MIN_AVO_DURATION,MAX_AVO_DURATION),
         speed: randInt(MIN_AVO_SPEED,MAX_AVO_SPEED),
+        delay: AVO_DELAY,
         visible : true,
         hittable: true,
+        dead: false,
+        killed: false,
         move: function(){
         },
         draw: function (){
-//            rect(this.x, this.y, this.w, this.h, 'black');
-            this.delay--;
-            if (this.delay == 0)
+            if (this.dead){
+                ctx.drawImage(images.pow, this.x, this.y, this.w, this.h);
+                this.delay--;
+                if (this.delay == 0)
+                    avocados[this.boardY][this.boardX] = null;
+                return;
+            }
+            this.duration--;
+            if (this.duration == 0) {
                 this.die();
+                avocados[this.boardY][this.boardX] = null;
+            }
+
             else
                 this.crop();
         },
         crop: function (){
+            ctx.globalAlpha = 0.4;
             rect(this.x, this.y, this.w, this.h, 'black');
+            ctx.globalAlpha = 1.0;
 //            ctx.save();
 //            ctx.beginPath();
 ////            rect(this.x, this.y, this.w, this.h);
@@ -621,9 +503,15 @@ function addAvocado(i,j){
 //            ctx.restore();
         },
         die: function(){
-            this.visible = false;
-            console.log(this.boardY,this.boardX, "DEAD" );
-            avocados[this.boardY][this.boardX] = null;
+            this.dead = true;
+        },
+        hit: function(){
+            if (!this.dead){
+//                console.log(images.pow, this.x, this.y, this.w, this.h);
+//                ctx.drawImage(images.pow, this.x, this.y, this.w, this.h);
+                this.killed = true;
+                this.die();
+            }
         }
     }
     avocados[i][j] = avocado;
