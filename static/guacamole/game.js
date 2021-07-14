@@ -449,68 +449,95 @@ function drawAvocados(){
         }
     }
 }
+
+const BOSS_CHANCE = 0.1;
 function addAvocado(i,j){
+    let holeX = j * HOLE_W + HOLES_OFFSET_X;
+    let holeY = i * HOLE_H + HOLES_OFFSET_Y;
+    let boss = randFloat(0,1) < BOSS_CHANCE;
     let avocado = {
-        img: images.avocado,
-        x: j * HOLE_W + HOLES_OFFSET_X,
-        y: i * HOLE_H + HOLES_OFFSET_Y + AVO_H,
+        img: boss ? images.boss : images.avocado,
+        x: holeX,
+        y: holeY + AVO_H,
+        holeX: holeX,
+        holeY: holeY,
+        tgtY: i * HOLE_H + HOLES_OFFSET_Y,
         w: AVO_W,
         h: AVO_H,
         boardX :j,
         boardY :i,
         duration: randInt(MIN_AVO_DURATION,MAX_AVO_DURATION),
-        speed: randInt(MIN_AVO_SPEED,MAX_AVO_SPEED),
+        speed: -randInt(MIN_AVO_SPEED,MAX_AVO_SPEED),
         delay: AVO_DELAY,
         visible : true,
+        hiding: false,
         hittable: true,
         dead: false,
         killed: false,
         move: function(){
-        },
-        draw: function (){
-            if (this.dead){
-                ctx.drawImage(images.pow, this.x, this.y, this.w, this.h);
+            this.y += this.speed;
+            if (this.y < this.tgtY){
+                this.y = this.tgtY;
+            }
+            if (this.hidden()){
+                this.die();
+            }
+            if (this.dead) {
                 this.delay--;
-                if (this.delay == 0)
+                if (this.delay == 0){
                     avocados[this.boardY][this.boardX] = null;
-                return;
+                }
             }
             this.duration--;
             if (this.duration == 0) {
-                this.die();
-                avocados[this.boardY][this.boardX] = null;
+                this.hide();
             }
-
-            else
-                this.crop();
         },
-        crop: function (){
-            ctx.globalAlpha = 0.4;
-            rect(this.x, this.y, this.w, this.h, 'black');
-            ctx.globalAlpha = 1.0;
-//            ctx.save();
-//            ctx.beginPath();
-////            rect(this.x, this.y, this.w, this.h);
-//            let cw = false;
-//            let holeCenterX = this.x + HOLE_W/2;
-//            let holeCenterY = this.y - HOLE_H/2;
-//            ctx.ellipse(holeCenterX ,holeCenterY, HOLE_RX, HOLE_RY, 0, 0, Math.PI, cw);
-//            ctx.fill();
-//            ctx.closePath();
-//
-////            ctx.clip();
-////            ctx.drawImage(this.x, this.y, this.w, this.h);
-//            ctx.restore();
+        hidden: function(){
+            let holeCenterY = this.holeY + HOLE_H/2;
+            let holeBottom = holeCenterY + HOLE_RY;
+            let avoTop = this.y;
+            return this.hiding && (avoTop > holeBottom);
+        },
+        draw: function (){
+            this.move();
+            if (!this.dead)
+                this.drawAvo();
+            if (this.killed)
+                ctx.drawImage(images.pow, this.holeX, this.holeY, this.w, this.h);
+        },
+        hide: function(){
+            this.speed *=-1;
+            this.hiding = true;
+        },
+        drawAvo: function (){
+            if (SHOW_HITBOX) {
+                ctx.globalAlpha = 0.4;
+                rect(this.x, this.y, this.w, this.h, 'black');
+                ctx.globalAlpha = 1.0;
+            }
+            // TODO: path is fixed, try to export
+            ctx.save();
+            ctx.beginPath();
+            let holeCenterX = this.holeX + HOLE_W/2;
+            let holeCenterY = this.holeY + HOLE_H/2;
+            let cw = false;
+            ctx.ellipse(holeCenterX ,holeCenterY, HOLE_RX, HOLE_RY, 0, 0, Math.PI, cw);
+            ctx.rect(this.holeX, holeCenterY - HOLE_W, this.w, this.h);
+            ctx.closePath();
+
+            ctx.clip();
+            ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+            ctx.restore();
         },
         die: function(){
             this.dead = true;
         },
         hit: function(){
             if (!this.dead){
-//                console.log(images.pow, this.x, this.y, this.w, this.h);
-//                ctx.drawImage(images.pow, this.x, this.y, this.w, this.h);
                 this.killed = true;
                 this.die();
+                updateScore(score + 1);
             }
         }
     }
