@@ -25,7 +25,7 @@ const RUNNING = "RUNNING";
 
 const stateFrames = {
     IDLE: [0],
-    HIT: [0,1,1,1,2,2,1,1,1,0]
+    HIT: [0,1,1,1,2,2,1,1,1]
 };
 
 // SCORE
@@ -84,21 +84,28 @@ const images = {};
 
 
 
-const HOLE_W = 50;
-const HOLE_H = 50;
+const HOLE_W = 100;//50;
+const HOLE_H = HOLE_W;
 const MALLET_W = HOLE_W * 1.1;
 const MALLET_H = HOLE_H * 1.1;
 const HOLE_RX = HOLE_W/2;
 const HOLE_RY = HOLE_H/4;
 const MALLET_OFFSET_X = -HOLE_W / 4;
 const MALLET_OFFSET_Y = -HOLE_H / 2;
+
 const AVO_H =  HOLE_H;
 const AVO_W =  HOLE_W;
 const PADDING = HOLE_H;
 const HOLES_OFFSET_X = PADDING;
-const HOLES_OFFSET_Y = 100 + PADDING;
+const HOLES_OFFSET_Y = 2 * HOLE_H + PADDING;
 const N_HOLES_X = 6;
 const N_HOLES_Y = 4;
+const MALLET_MAX_X = (N_HOLES_X-1) * HOLE_W + HOLES_OFFSET_X;
+const MALLET_MAX_Y = (N_HOLES_Y-1) * HOLE_H + HOLES_OFFSET_Y;
+
+const BOSS_CHANCE = 0.3;
+const BOSS_HP = 3
+const BOSS_SCORE = 5;
 
 const canvas = document.getElementById('game_canvas');
 const ctx = canvas.getContext('2d');
@@ -106,6 +113,8 @@ canvas.width = N_HOLES_X * HOLE_W + PADDING + HOLES_OFFSET_X;
 canvas.height = N_HOLES_Y * HOLE_H + PADDING + HOLES_OFFSET_Y;
 const cWidth = canvas.width;
 const cHeight = canvas.height;
+
+
 
 function rect(xPos, yPos, width, height, color) {
     ctx.fillStyle = color;
@@ -181,6 +190,7 @@ var player = {
         }
         this.vx = (prevBoardX < this.boardX) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtX = HOLES_OFFSET_X + this.boardX * HOLE_W;
+        console.log(prevBoardX, this.boardX, this.tgtX, this.vx);
     },
     moveY: function(direction){
         this.movingY = true;
@@ -196,6 +206,15 @@ var player = {
         }
         this.vy = (prevBoardY < this.boardY) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtY = HOLES_OFFSET_Y + this.boardY * HOLE_H;
+    },
+    clampCoords: function(){
+        this.x = clamp(this.x, HOLES_OFFSET_X, MALLET_MAX_X);
+        this.y = clamp(this.y, HOLES_OFFSET_Y, MALLET_MAX_Y);
+        if(SHOW_HITBOX){
+            ctx.globalAlpha = 0.6;
+            rect(HOLES_OFFSET_X, HOLES_OFFSET_Y, MALLET_MAX_X, MALLET_MAX_Y, 'black');
+            ctx.globalAlpha = 1.0;
+        }
     },
     move: function(direction) {
         switch(direction){
@@ -242,6 +261,7 @@ var player = {
                 this.y += this.vy;
             }
         }
+//        this.clampCoords(); // TODO uncomment and debug
     },
     // player animation
     currFrameIdx: 0,
@@ -450,13 +470,17 @@ function drawAvocados(){
     }
 }
 
-const BOSS_CHANCE = 0.1;
 function addAvocado(i,j){
     let holeX = j * HOLE_W + HOLES_OFFSET_X;
     let holeY = i * HOLE_H + HOLES_OFFSET_Y;
     let boss = randFloat(0,1) < BOSS_CHANCE;
+    let hitScore = boss ? BOSS_SCORE :1;
+    let hp = boss ? BOSS_HP : 1;
     let avocado = {
         img: boss ? images.boss : images.avocado,
+        isBoss : boss,
+        hp: hp,
+        hitScore : hitScore,
         x: holeX,
         y: holeY + AVO_H,
         holeX: holeX,
@@ -492,6 +516,8 @@ function addAvocado(i,j){
             if (this.duration == 0) {
                 this.hide();
             }
+            if (this.isHurt)
+                this.toggleOpacity();
         },
         hidden: function(){
             let holeCenterY = this.holeY + HOLE_H/2;
@@ -527,17 +553,26 @@ function addAvocado(i,j){
             ctx.closePath();
 
             ctx.clip();
+            ctx.globalAlpha = this.opacity;
             ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+            ctx.globalAlpha = 1;
             ctx.restore();
+        },
+        opacity: 1,
+        toggleOpacity: function(){
+            this.opacity = 1.5 - this.opacity;
         },
         die: function(){
             this.dead = true;
         },
+        isHurt: false,
         hit: function(){
-            if (!this.dead){
+            this.hp--;
+            this.isHurt = true;
+            if (this.hp == 0 && !this.dead){
                 this.killed = true;
                 this.die();
-                updateScore(score + 1);
+                updateScore(score + this.hitScore);
             }
         }
     }
