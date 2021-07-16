@@ -1,4 +1,4 @@
-import {postScore, getGameHighScore, postGameHighScore} from '../scoreAPI.js'
+import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
 
 // const fetch = require('node-fetch');
 const PORT = 5000

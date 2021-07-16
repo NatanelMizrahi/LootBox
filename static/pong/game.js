@@ -1,4 +1,4 @@
-import {postScore} from '../scoreAPI.js'
+import {postScore} from '../common/scoreAPI.js'
 
 function drawImage(ctx, image, x, y, w, h, alpha = 1) {
         ctx.save();

@@ -1,10 +1,11 @@
-import {postScore, getGameHighScore, postGameHighScore} from '../scoreAPI.js'
+import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
 
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
 const UP = 38;
-const RESTART_KEY_CODE = 82;
+const RESTART_KEY_CODE = 82; // R
+const MUTE_KEY = 77; // M
 
 // animation
 const INITIAL_BG_VX = 1;
@@ -30,17 +31,17 @@ const stateFrames = {
 const SUBMIT_SCORE_DELTA = 10;
 
 // PHYSICS
-const G = 2;
+const G = 1.3;
 const FRICTION = 1.2;
 
-const PLAYER_AX = 0.9;
+const PLAYER_AX = 0.7; // 0.9;
 const MAX_PLAYER_VX = 20;
-const PLAYER_JUMP_VY = 10*G;
+const PLAYER_JUMP_VY = 13 * G; // 10*G;
 const PLAYER_DEAD_VY = 4;
-const VX_JUMP_FACT = 0.03;
+const VX_JUMP_FACT =  0.02;// 0.03;
 const VX_WALLJUMP_FACT = 2 * VX_JUMP_FACT;
 
-const PLATFORM_AY = 0.004;
+const PLATFORM_AY = 0.004; //0.004;
 const PLATFORM_INITIAL_VY = 3;
 const PLATFORM_FALL_DELAY = 70;
 const PLATFORM_PRE_FALL_SHAKE_DY = 5;
@@ -125,7 +126,6 @@ function drawBG() {
 
 var player = {
     color: 'red',
-    dead: false,
     r: PLAYER_R,
     x: cWidth / 2,
     y: cHeight,
@@ -134,6 +134,7 @@ var player = {
     ax: 0,
     ay: -G,
     state: IDLE,
+    dead: false,
     running: false,
     jumping: false,
     platform: null,
@@ -303,6 +304,20 @@ var player = {
             this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
             this.animationIntervalCounter = PLAYER_ANIMATION_INTERVAL;
         }
+    },
+    reset: function() {
+        this.x = cWidth / 2;
+        this.y = cHeight;
+        this.vx = 0;
+        this.vy = 0;
+        this.ax = 0;
+        this.ay = -G;
+        this.state = IDLE;
+        this.running = false;
+        this.jumping = false;
+        this.platform = null;
+        this.dead = false;
+        this.animationFrameArr = stateFrames[this.state];
     }
 }
 
@@ -552,7 +567,10 @@ function keyDown(e) {
             player.left();
             break;
         case RESTART_KEY_CODE:
-            if (player.dead) location.reload();
+            if (player.dead) reset(); //location.reload();
+            break;
+        case MUTE_KEY:
+            toggleTheme();
             break;
         default:
             break;
@@ -589,7 +607,33 @@ function loadImages() {
     });
 }
 
+function toggleTheme() {
+    const theme = document.getElementById('theme');
+    theme.muted = !theme.muted;
+}
+
+function loadAudio(){
+    window.onload = function(){
+        const theme = document.getElementById('theme');
+        theme.autoplay = true;
+        theme.loop = true;
+        let play = function(){
+            window.removeEventListener('keydown', play, false);
+            theme.play();
+        }
+        window.addEventListener('keydown', play, false);
+    }
+}
+function reset(){
+    score = 0;
+    prevScore = 0;
+    n_platforms = 0;
+    platforms = []
+    platform_vy = PLATFORM_INITIAL_VY
+    player.reset();
+}
 function main() {
+    loadAudio();
     loadImages();
 }
 

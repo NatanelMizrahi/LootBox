@@ -1,4 +1,4 @@
-import {postScore, getGameHighScore, postGameHighScore} from '../scoreAPI.js'
+import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
 
 
 // Key mapping
@@ -54,7 +54,7 @@ var platform_vy = PLATFORM_INITIAL_VY;
 // misc.
 const PRODUCTION = false;
 const THEME_ON = true;
-const SHOW_HITBOX = false;
+const SHOW_HITBOX = true;
 const FLAMES_ON_DEAD_ONLY = false;
 const gameOverMessage = `GAME OVER (press ${String.fromCharCode(RESTART_KEY_CODE).toUpperCase()} to replay)`;
 
@@ -95,6 +95,7 @@ const MALLET_OFFSET_Y = -HOLE_H / 2;
 
 const AVO_H =  HOLE_H;
 const AVO_W =  HOLE_W;
+const AVO_MARGIN_TOP = AVO_H/4;
 const PADDING = HOLE_H;
 const HOLES_OFFSET_X = PADDING;
 const HOLES_OFFSET_Y = 2 * HOLE_H + PADDING;
@@ -105,7 +106,7 @@ const MALLET_MAX_Y = (N_HOLES_Y-1) * HOLE_H + HOLES_OFFSET_Y;
 
 const BOSS_CHANCE = 0.3;
 const BOSS_HP = 3
-const BOSS_SCORE = 5;
+const BOSS_SCORE = BOSS_HP;
 
 const canvas = document.getElementById('game_canvas');
 const ctx = canvas.getContext('2d');
@@ -116,9 +117,11 @@ const cHeight = canvas.height;
 
 
 
-function rect(xPos, yPos, width, height, color) {
+function rect(xPos, yPos, width, height, color, alpha=1) {
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
     ctx.fillRect(xPos, yPos, width, height);
+    ctx.globalAlpha = 1;
 }
 
 function circle(xPos, yPos, radius, color) {
@@ -210,11 +213,8 @@ var player = {
     clampCoords: function(){
         this.x = clamp(this.x, HOLES_OFFSET_X, MALLET_MAX_X);
         this.y = clamp(this.y, HOLES_OFFSET_Y, MALLET_MAX_Y);
-        if(SHOW_HITBOX){
-            ctx.globalAlpha = 0.6;
-            rect(HOLES_OFFSET_X, HOLES_OFFSET_Y, MALLET_MAX_X, MALLET_MAX_Y, 'black');
-            ctx.globalAlpha = 1.0;
-        }
+        if(SHOW_HITBOX)
+            rect(HOLES_OFFSET_X, HOLES_OFFSET_Y, MALLET_MAX_X, MALLET_MAX_Y, 'black', 0.6);
     },
     move: function(direction) {
         switch(direction){
@@ -279,7 +279,7 @@ var player = {
         let fy = yOffset * fh;
         let fr = SCALE_PLAYER_IMG * this.r;
         if (SHOW_HITBOX)
-            rect(this.x, this.y, this.w, this.h, this.color);
+            rect(this.x, this.y, this.w, this.h, this.color, 0.5);
         ctx.drawImage(img, fx, fy, fw, fh, this.x + MALLET_OFFSET_X, this.y + + MALLET_OFFSET_Y, this.w, this.h);
         this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
         this.checkIdle();
@@ -522,7 +522,7 @@ function addAvocado(i,j){
         hidden: function(){
             let holeCenterY = this.holeY + HOLE_H/2;
             let holeBottom = holeCenterY + HOLE_RY;
-            let avoTop = this.y;
+            let avoTop = this.y + AVO_MARGIN_TOP;
             return this.hiding && (avoTop > holeBottom);
         },
         draw: function (){
@@ -537,11 +537,8 @@ function addAvocado(i,j){
             this.hiding = true;
         },
         drawAvo: function (){
-            if (SHOW_HITBOX) {
-                ctx.globalAlpha = 0.4;
-                rect(this.x, this.y, this.w, this.h, 'black');
-                ctx.globalAlpha = 1.0;
-            }
+            if (SHOW_HITBOX)
+                rect(this.x, this.y, this.w, this.h, 'black', 0.4);
             // TODO: path is fixed, try to export
             ctx.save();
             ctx.beginPath();
