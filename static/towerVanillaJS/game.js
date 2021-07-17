@@ -642,5 +642,5 @@ function main(images) {
 
 let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
 main(imageList);
-
+console.log("pushing to master");
 // reset
