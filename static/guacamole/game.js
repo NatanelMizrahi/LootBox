@@ -32,7 +32,8 @@ const stateFrames = {
 const SUBMIT_SCORE_DELTA = 10;
 
 // PHYSICS
-const ALLOW_WRAP = true;
+//const ALLOW_WRAP = true;
+const ALLOW_WRAP = true ;
 const G = 2;
 const FRICTION = 1.2;
 
@@ -54,7 +55,7 @@ var platform_vy = PLATFORM_INITIAL_VY;
 // misc.
 const PRODUCTION = false;
 const THEME_ON = true;
-const SHOW_HITBOX = true;
+const SHOW_HITBOX = false;
 const FLAMES_ON_DEAD_ONLY = false;
 const gameOverMessage = `GAME OVER (press ${String.fromCharCode(RESTART_KEY_CODE).toUpperCase()} to replay)`;
 
@@ -99,14 +100,15 @@ const AVO_MARGIN_TOP = AVO_H/4;
 const PADDING = HOLE_H;
 const HOLES_OFFSET_X = PADDING;
 const HOLES_OFFSET_Y = 2 * HOLE_H + PADDING;
-const N_HOLES_X = 6;
-const N_HOLES_Y = 4;
+const N_HOLES_X = 5; //6;
+const N_HOLES_Y = 5; //4;
 const MALLET_MAX_X = (N_HOLES_X-1) * HOLE_W + HOLES_OFFSET_X;
 const MALLET_MAX_Y = (N_HOLES_Y-1) * HOLE_H + HOLES_OFFSET_Y;
 
 const BOSS_CHANCE = 0.3;
 const BOSS_HP = 3
 const BOSS_SCORE = BOSS_HP;
+const BOSS_DURATION_RATIO = 1.15;
 
 const canvas = document.getElementById('game_canvas');
 const ctx = canvas.getContext('2d');
@@ -114,8 +116,6 @@ canvas.width = N_HOLES_X * HOLE_W + PADDING + HOLES_OFFSET_X;
 canvas.height = N_HOLES_Y * HOLE_H + PADDING + HOLES_OFFSET_Y;
 const cWidth = canvas.width;
 const cHeight = canvas.height;
-
-
 
 function rect(xPos, yPos, width, height, color, alpha=1) {
     ctx.globalAlpha = alpha;
@@ -172,6 +172,7 @@ var player = {
     tgtY: HOLES_OFFSET_Y,
     movingX: false,
     movingY: false,
+    wrapping: false,
     hit: function(){
         this.state = HIT;
         this.animationFrameArr = stateFrames[HIT];
@@ -183,9 +184,11 @@ var player = {
         this.movingX = true;
         let delta = (direction == RIGHT) ? 1 : -1;
         let prevBoardX = this.boardX;
+        if (ALLOW_WRAP && this.wrapping) return;
         this.boardX += delta;
         if (this.boardX < 0 || this.boardX >= N_HOLES_X) {
             if (ALLOW_WRAP){
+                this.wrapping = true;
                 this.boardX = (this.boardX+ N_HOLES_X) % N_HOLES_X;
             } else {
                 this.boardX = clamp(this.boardX, 0, N_HOLES_X-1);
@@ -193,7 +196,8 @@ var player = {
         }
         this.vx = (prevBoardX < this.boardX) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtX = HOLES_OFFSET_X + this.boardX * HOLE_W;
-        console.log(prevBoardX, this.boardX, this.tgtX, this.vx);
+        this.vx = this.x < this.tgtX ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
+//        console.log(prevBoardX, this.boardX, this.tgtX, this.vx);
     },
     moveY: function(direction){
         this.movingY = true;
@@ -209,6 +213,7 @@ var player = {
         }
         this.vy = (prevBoardY < this.boardY) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtY = HOLES_OFFSET_Y + this.boardY * HOLE_H;
+        this.vy = this.y < this.tgtY ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
     },
     clampCoords: function(){
         this.x = clamp(this.x, HOLES_OFFSET_X, MALLET_MAX_X);
@@ -245,6 +250,7 @@ var player = {
             let nextX = this.nextX();
             if ((this.x <= this.tgtX && this.tgtX <= nextX) || (this.x >= this.tgtX && this.tgtX >= nextX)){
                 this.x = this.tgtX;
+                this.wrapping = false;
                 this.movingX = 0;
                 this.vx = 0;
             } else {
@@ -255,6 +261,7 @@ var player = {
             let nextY = this.nextY();
             if ((this.y <= this.tgtY && this.tgtY <= nextY) || (this.y >= this.tgtY && this.tgtY >= nextY)){
                 this.y = this.tgtY;
+                this.wrapping = false;
                 this.movingY = 0;
                 this.vy = 0;
             } else {
@@ -305,7 +312,7 @@ function range(min, max) {
 }
 
 function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(Math.random() * (max - min + 1)) + Math.ceil(min);
 }
 
 function randFloat(min, max) {
@@ -476,6 +483,7 @@ function addAvocado(i,j){
     let boss = randFloat(0,1) < BOSS_CHANCE;
     let hitScore = boss ? BOSS_SCORE :1;
     let hp = boss ? BOSS_HP : 1;
+    let durationRation = boss? BOSS_DURATION_RATIO: 1;
     let avocado = {
         img: boss ? images.boss : images.avocado,
         isBoss : boss,
@@ -490,7 +498,7 @@ function addAvocado(i,j){
         h: AVO_H,
         boardX :j,
         boardY :i,
-        duration: randInt(MIN_AVO_DURATION,MAX_AVO_DURATION),
+        duration: randInt(MIN_AVO_DURATION * durationRation,MAX_AVO_DURATION*durationRation),
         speed: -randInt(MIN_AVO_SPEED,MAX_AVO_SPEED),
         delay: AVO_DELAY,
         visible : true,

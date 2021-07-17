@@ -50,6 +50,7 @@ const MOVING_PLATFORM_VX = 1;
 var platform_vy = PLATFORM_INITIAL_VY;
 
 // misc.
+const DEFAULT_MUTED = true;
 const PRODUCTION = true;
 const THEME_ON = true;
 const SHOW_HITBOX = false;
@@ -589,24 +590,24 @@ function render() {
 }
 
 
-function loadImages() {
-    let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
+function loadImages(imageList) {
     let imageLoadedPromises = [];
     for (let img of imageList) {
         images[img] = new Image();
         images[img].src = `assets/images/${img}.png`;
         imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
     }
-    Promise.all(imageLoadedPromises).then(loaded => {
+    return Promise.all(imageLoadedPromises)
+}
+
+function playGame(){
         initFlames();
         initPlatforms();
         initWalls();
         initBackground();
         initHighScore();
         requestAnimationFrame(render);
-    });
 }
-
 function toggleTheme() {
     const theme = document.getElementById('theme');
     theme.muted = !theme.muted;
@@ -617,9 +618,11 @@ function loadAudio(){
         const theme = document.getElementById('theme');
         theme.autoplay = true;
         theme.loop = true;
+        theme.muted = DEFAULT_MUTED;
         let play = function(){
             window.removeEventListener('keydown', play, false);
             theme.play();
+
         }
         window.addEventListener('keydown', play, false);
     }
@@ -632,9 +635,12 @@ function reset(){
     platform_vy = PLATFORM_INITIAL_VY
     player.reset();
 }
-function main() {
+function main(images) {
     loadAudio();
-    loadImages();
+    loadImages(imageList).then(playGame);
 }
 
-main();
+let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
+main(imageList);
+
+// reset
