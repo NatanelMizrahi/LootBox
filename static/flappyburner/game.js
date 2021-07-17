@@ -102,7 +102,7 @@ function playGame() {
 
     //Controls
     var themeOn = true;
-    const showHitBox = true;
+    const showHitBox = false;
     var paused = false;
 
     //game render interval
@@ -266,11 +266,11 @@ function playGame() {
         score: 0,
         scale: 0.5,
         up: false,
-        vy: -700,
-        InitialVY: -700,
+        vy: -500,
+        InitialVY: -500,
         upkey: 87,	//W
         yMax: cHeight,
-        yMin: cHeight * 0.1,
+        yMin: 0,
         distanceCovered: 0,
         getCenter: function () {
             return [this.x + this.radius, this.y + this.radius]
@@ -290,12 +290,14 @@ function playGame() {
 
         onUpKeyPress: function (e) {
             // if (e.keyCode !== this.upkey) return;
-            if (e.repeat) return;
 //            var key = e.which || e.keyCode;
 //            if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
 //            if (key == RESTART_KEY_CODE && this.dead) resetGameState()
             this.up = true
-            this.vy = 0
+
+            if (!e.repeat) {
+                this.vy = 0
+            }
         },
         onUpKeyRelease: function (e) {
             // if (e.keyCode !== this.upkey) return;
@@ -312,8 +314,8 @@ function playGame() {
         hitBoxRadius: function () {
             return this.radius * this.hitBoxFactor
         },
-        touchesFloor: function () {
-            return (this.y + this.radius) >= cHeight;
+        touchesFloorOrCeiling: function () {
+            return ((this.y + this.radius) >= cHeight) || ((this.y - this.radius) <= 0);
         }
     }
 
@@ -346,7 +348,7 @@ function playGame() {
             }
 
         })
-        if (player.touchesFloor()){
+        if (player.touchesFloorOrCeiling()){
             endGame = true;
         }
         return endGame;
