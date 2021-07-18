@@ -519,7 +519,8 @@ function submitHighScore(){
     .then(gameHighScore => highscore = gameHighScore);
 }
 
-function drawScoreBoard(){
+// common
+function drawScoreBoard(themeColor='black'){
     ctx.textAlign='center';
     ctx.fillStyle='white';
     ctx.font= '80px arial';
@@ -530,11 +531,10 @@ function drawScoreBoard(){
     ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
 
     if (player.dead){
-        if (THEME_ON) ctx.fillStyle='black';
+        if (THEME_ON) ctx.fillStyle=themeColor;
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
 }
-
 
 // key Press EventListeners
 window.addEventListener('keydown', keyDown, false);
@@ -578,7 +578,7 @@ function keyDown(e) {
     }
 }
 
-// render
+// must implement
 function render() {
     drawBG();
     drawWalls();
@@ -589,7 +589,7 @@ function render() {
     requestAnimationFrame(render);
 }
 
-
+// common
 function loadImages(imageList) {
     let imageLoadedPromises = [];
     for (let img of imageList) {
@@ -599,7 +599,7 @@ function loadImages(imageList) {
     }
     return Promise.all(imageLoadedPromises)
 }
-
+// must implement
 function playGame(){
         initFlames();
         initPlatforms();
@@ -608,12 +608,13 @@ function playGame(){
         initHighScore();
         requestAnimationFrame(render);
 }
+// common
 function toggleTheme() {
     const theme = document.getElementById('theme');
     theme.muted = !theme.muted;
 }
-
-function loadAudio(){
+// common
+function loadAudio(audioList){
     window.onload = function(){
         const theme = document.getElementById('theme');
         theme.autoplay = true;
@@ -627,6 +628,7 @@ function loadAudio(){
         window.addEventListener('keydown', play, false);
     }
 }
+// must implement
 function reset(){
     score = 0;
     prevScore = 0;
@@ -635,12 +637,14 @@ function reset(){
     platform_vy = PLATFORM_INITIAL_VY
     player.reset();
 }
-function main(images) {
-    loadAudio();
+// common
+function loadGame(imageList, audioList) {
+    loadAudio(audioList); // non blocking
     loadImages(imageList).then(playGame);
 }
 
 let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
-main(imageList);
-console.log("pushing to master");
+let audioList = ["theme"];
+
+loadGame(imageList, audioList);
 // reset

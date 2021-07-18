@@ -95,11 +95,13 @@ function rect(xPos, yPos, width, height, color, alpha=1) {
     ctx.globalAlpha = 1;
 }
 
-function circle(xPos, yPos, radius, color) {
+function circle(xPos, yPos, radius, color, alpha=1) {
     ctx.fillStyle = color;
     ctx.beginPath();
+    ctx.globalAlpha = alpha;
     ctx.arc(xPos, cHeight - yPos, radius, 0, 2 * Math.PI, false);
     ctx.fill();
+    ctx.globalAlpha = 1;
 }
 
 // background
@@ -341,7 +343,7 @@ function submitHighScore(){
     .then(gameHighScore => highscore = gameHighScore);
 }
 
-function drawScoreBoard(){
+function drawScoreBoard(themeColor='black'){
     ctx.textAlign='center';
     ctx.fillStyle='white';
     ctx.font= '80px arial';
@@ -352,6 +354,7 @@ function drawScoreBoard(){
     ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
 
     if (player.dead){
+        if (THEME_ON) ctx.fillStyle = themeColor;
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
 }
