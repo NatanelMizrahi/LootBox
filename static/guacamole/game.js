@@ -1,13 +1,11 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame} from '../common/common.js';
 
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
 const UP = 38;
 const DOWN = 40;
-const RESTART_KEY_CODE = 82; //R
-const MUTE_KEY = 77; // M
 const HIT_KEY = 32; // space
 
 // animation
@@ -31,17 +29,9 @@ const SUBMIT_SCORE_DELTA = 10;
 const ALLOW_WRAP = false;
 const MAX_PLAYER_VX = 20;
 
-
-
-// misc.
-const PRODUCTION = false;
-const THEME_ON = true;
-const SHOW_HITBOX = false;
-const gameOverMessage = `GAME OVER (press ${String.fromCharCode(RESTART_KEY_CODE).toUpperCase()} to replay)`;
-
 const SPAWN_CHANCE = 0.002;
 const INITIAL_MAX_AVOCADOS = 3;
-const MAX_AVOCADOS_STEP = 40;
+const MAX_AVOCADOS_STEP = 10;
 
 const HOLE_W = 100; //50;
 const HOLE_H = HOLE_W;
@@ -79,30 +69,10 @@ const BOSS_SCORE = BOSS_HP;
 const BOSS_DURATION_RATIO = 1.15;
 
 
-const images = {};
-
-const canvas = document.getElementById('game_canvas');
-const ctx = canvas.getContext('2d');
 canvas.width = N_HOLES_X * HOLE_W + PADDING + HOLES_OFFSET_X;
 canvas.height = N_HOLES_Y * HOLE_H + PADDING + HOLES_OFFSET_Y;
 const cWidth = canvas.width;
 const cHeight = canvas.height;
-
-function rect(xPos, yPos, width, height, color, alpha=1) {
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    ctx.fillRect(xPos, yPos, width, height);
-    ctx.globalAlpha = 1;
-}
-
-function circle(xPos, yPos, radius, color, alpha=1) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.globalAlpha = alpha;
-    ctx.arc(xPos, cHeight - yPos, radius, 0, 2 * Math.PI, false);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-}
 
 // background
 var backgroundVX = INITIAL_BG_VX;
@@ -288,36 +258,6 @@ var player = {
     }
 }
 
-// walls
-var wallPattern;
-function initWalls() {
-    wallPattern = ctx.createPattern(images.wall, 'repeat');
-}
-
-function drawWalls() {
-    rect(0, 0, WALL_WIDTH, cHeight, wallPattern);                   // LEFT WALL
-    rect(cWidth - WALL_WIDTH, 0, WALL_WIDTH, cHeight, wallPattern); // RIGHT WALL
-}
-
-// aux functions
-function range(min, max) {
-    let arr = [];
-    for (let i = min; i <= max; i++) arr.push(i);
-    return arr;
-}
-
-function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + Math.ceil(min);
-}
-
-function randFloat(min, max) {
-    return (Math.random() * (max - min)) + min;
-}
-
-function clamp(val, min, max) {
-    return Math.min(Math.max(val, min), max);
-}
-
 // scoreboard
 var highscore = 0;
 var score = 0;
@@ -343,89 +283,15 @@ function submitHighScore(){
     .then(gameHighScore => highscore = gameHighScore);
 }
 
-function drawScoreBoard(themeColor='black'){
-    ctx.textAlign='center';
+function drawMessages(){
     ctx.fillStyle='white';
-    ctx.font= '80px arial';
-    ctx.fillText(score,           cWidth/4, cHeight/8 + 70);
-    ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
     ctx.font='20px arial';
-    ctx.fillText('Score',         cWidth/4, cHeight/8);
-    ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
-
     if (player.dead){
-        if (THEME_ON) ctx.fillStyle = themeColor;
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
+    ctx.fillText("[SPACE:hit][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
+
 }
-
-
-// key Press EventListeners
-window.addEventListener('keydown', keyDown, false);
-
-function keyDown(e) {
-    if (e.repeat) return;
-    var key = e.which || e.keyCode;
-    if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
-    switch (key) {
-        case UP:
-        case DOWN:
-        case LEFT:
-        case RIGHT:
-            player.move(key);
-            break;
-        case HIT_KEY:
-            player.hit();
-            break
-        case RESTART_KEY_CODE:
-            if (player.dead) reset(); //location.reload();
-            break;
-        case MUTE_KEY:
-            toggleTheme();
-            break;
-    }
-}
-
-// render
-function render() {
-    drawBG();
-    drawHP();
-
-    drawHoles();
-    drawAvocados();
-    player.draw();
-    drawScoreBoard();
-    requestAnimationFrame(render);
-}
-
-function reset(){
-    score = 0;
-    prevScore = 0;
-    player.reset();
-}
-
-function loadImages() {
-    let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
-    let imageLoadedPromises = [];
-    for (let img of imageList) {
-        images[img] = new Image();
-        images[img].src = `assets/images/${img}.png`;
-        imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
-    }
-    Promise.all(imageLoadedPromises).then(loaded => {
-        initHoles();
-        initAvocados();
-        initBackground();
-        initHighScore();
-        requestAnimationFrame(render);
-    });
-}
-
-function main() {
-    loadImages();
-}
-
-main();
 
 
 function createHolePattern(){
@@ -557,7 +423,6 @@ function addAvocado(i,j){
         drawAvo: function (){
             if (SHOW_HITBOX)
                 rect(this.x, this.y, this.w, this.h, 'black', 0.4);
-            // TODO: path is fixed, try to export
             ctx.save();
             ctx.beginPath();
             let holeCenterX = this.holeX + HOLE_W/2;
@@ -593,4 +458,63 @@ function addAvocado(i,j){
     }
     avocados[i][j] = avocado;
     numAvocados++;
+}
+
+
+// key Press EventListeners
+window.addEventListener('keydown', keyDown, false);
+
+function keyDown(e) {
+    if (e.repeat) return;
+    var key = e.which || e.keyCode;
+    if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
+    switch (key) {
+        case UP:
+        case DOWN:
+        case LEFT:
+        case RIGHT:
+            player.move(key);
+            break;
+        case HIT_KEY:
+            player.hit();
+            break
+        case RESTART_KEY_CODE:
+            if (player.dead) reset(); //location.reload();
+            break;
+        case MUTE_KEY:
+            toggleTheme();
+            break;
+    }
+}
+
+// render
+function render() {
+    drawBG();
+    drawHP();
+
+    drawHoles();
+    drawAvocados();
+    player.draw();
+    drawScoreBoard(score,highscore);
+    drawMessages();
+    requestAnimationFrame(render);
+}
+
+function reset(){
+    score = 0;
+    prevScore = 0;
+    player.reset();
+}
+
+let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
+let audioList = ["theme"];
+
+loadGame(imageList, audioList).then(playGame);
+
+function playGame() {
+    initHoles();
+    initAvocados();
+    initBackground();
+    initHighScore();
+    requestAnimationFrame(render);
 }
