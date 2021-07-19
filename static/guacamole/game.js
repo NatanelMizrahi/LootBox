@@ -506,11 +506,6 @@ function reset(){
     player.reset();
 }
 
-let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
-let audioList = ["theme"];
-
-loadGame(imageList, audioList).then(playGame);
-
 function playGame() {
     initHoles();
     initAvocados();
@@ -518,3 +513,8 @@ function playGame() {
     initHighScore();
     requestAnimationFrame(render);
 }
+
+let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
+let audioList = ["theme"];
+
+loadGame(imageList, audioList).then(playGame);

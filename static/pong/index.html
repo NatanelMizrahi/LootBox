@@ -1,80 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Ping Pong Rick!</title>
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-	<link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
-	<link rel="stylesheet" href="styles.css">
-	<link rel="icon" href="https://ih1.redbubble.net/image.410212760.7434/flat,1000x1000,075,f.u1.jpg">
-<!--	<style>-->
-
-<!--	</style>-->
 </head>
 <body>
-	<div class="spacer" hidden></div>
-	<div class="controls" hidden>
-		<h3>Controls</h3>
-		<div>
-			<span>Multiplayer &nbsp;</span>
-			<input id="multiplayer" type="checkbox">
-		</div>
-		<div>
-			<span>Rick and Morty Theme &nbsp;</span>
-			<input id="graphics" type="checkbox" checked>
-		</div>
-		<div>
-			<span>Difficulty</span>
-			<ul>
-				<li><input type="radio" name="difficulty" value="easy" > Easy</li>
-				<li><input type="radio" name="difficulty" value="medium" > Intermediate</li>
-				<li><input type="radio" name="difficulty" value="hard" > Hard</li>
-				<li><input type="radio" name="difficulty" value="insane" checked> Insane!!</li>
-			</ul>
-		</div>
-		<div>
-			<h4><b><u>Keyboard controls</u></b></h4>
-			<span>Player 1:</span>
-			<input class="input" id="p1_upkey" placeholder="W">
-			<input class="input" id="p1_downkey" placeholder="S">
-		</div>
-		<div>
-			<span>Player 2:</span>
-			<input class="input" id="p2_upkey" placeholder="&uarr;">
-			<input class="input" id="p2_downkey" placeholder="&darr;">
-		</div>
-		<div>
-			<span>Goal: </span>
-			<input id="goal" class="input" value="10">
-			<button class="button" id="reset" onclick="blur()">Reset Score</button>
-			<br><br>
-			<p>Press Enter/Esc to Pause game.</p>
-		</div>
-		<div class="sound-controls">
-			<audio id="theme" src="https://www.televisiontunes.com/uploads/audio/Rick and Morty.mp3" muted>
-			</audio>
-
-			<span>Music Controls</span><br>
-			<button class="btn btn-warning glyphicon glyphicon-volume-off" id="mute_btn"></button>
-			<button class="btn btn btn-warning glyphicon glyphicon-plus-sign" id="volume_up"></button>
-			<button class="btn btn btn-warning glyphicon glyphicon-minus-sign" id="volume_down"></button>
-		</div>
-	</div>
-	<canvas id="game_canvas">Not supported in your browser.</canvas>
-	<div id="pauseMenu">
-		<span id="message">text</span>
-		<br>
-		<button class="button" id="pauseBtn">text</button>
-	</div>
-		<div id="loadingMenu">
-			<h1>Loading...</h1>
-			<p >Graphics: <span id="imgLoad">0</span>%</p>
-			<p >Audio: <span id="audioLoad">0</span>%</p>
-			<button class="button" id="loadScreenPlayBtn" hidden>PLAY</button>
-			<div id="loadingMenuInner">
-			</div>
-
-	</div>
+	<canvas id="game_canvas"></canvas>
 	<script type="module" src="game.js"></script>
-	<script type="module" src="scoreAPI.js"></script>
+	<audio id="theme" src="../common/assets/music/theme.wav"></audio>
 </body>
 </html>

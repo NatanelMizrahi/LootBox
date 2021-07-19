@@ -1,5 +1,22 @@
-import {postScore} from '../common/scoreAPI.js'
-
+import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame} from '../common/common.js';
+const UP = 38;
+const DOWN = 40;
+const INIT_HP = 5;
+const HEART_SIZE = 30;
+const PLAYER_SPEED = 5;
+const DIFFICULTY_STEP = 5;
+const MAX_BALL_Y_SPEED = 3;
+const INIT_DIFFICULTY = 2;
+const SUBMIT_SCORE_DELTA = 1;
+const CORNER_HIT_SPEED_FACT_Y = 0.3;
+const CORNER_HIT_SPEED_FACT_X = 0.2;
+const PLAYER_SCALE = 1;
+function drawHP(){
+    for (let i = 0; i < player.hp; i++){
+        ctx.drawImage(images.heart, i * HEART_SIZE, HEART_SIZE, HEART_SIZE, HEART_SIZE);
+    }
+}
 function drawImage(ctx, image, x, y, w, h, alpha = 1) {
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -169,11 +186,9 @@ class Portal {
     }
 }
 
-//Load images & audio files
+//audio files
 
 var audios=[
-    //p1 score audios
-    [
         "https://www.myinstants.com/media/sounds/pickle_rick.mp3", //pickle rick r
         "https://peal.io/download/74hun", //shum shum shlippity r
         "https://peal.io/download/kechr", // the way the news goes r
@@ -186,9 +201,6 @@ var audios=[
         "https://peal.io/download/lkwsv", //burger time r
         "https://peal.io/download/ese2n", //baby bunkers r
         "https://peal.io/download/n4a6w", //help m
-    ],
-    //p2 score audios
-    [
         "https://peal.io/download/eolny", //ooee m
         "https://peal.io/download/yb659", //OMG m
         "https://peal.io/download/h6grs", // that's retarded r
@@ -196,170 +208,76 @@ var audios=[
         "https://peal.io/download/zau51", //for real m
         "https://peal.io/download/rttym", //dream bitch r
         "https://peal.io/download/s2m8i", //whatever r
-    ],
-    //p1 win audios
-    [
         "https://peal.io/download/ldaze", //lick my balls r
         "https://peal.io/download/6iens", //oh man m
         "https://peal.io/download/79qmp", // f u god
-    ],
-    //p2 win audios
-    [
         "https://peal.io/download/n4a6w", //ooo yeah ?
         "https://peal.io/download/tvqbh"	 //who the fuck are you? r
-    ]
 ];
-var audioLoaded=false;
-var numOfAudios=0;
-audios.forEach(function(arr){
-    numOfAudios+=arr.length;
-});
-loadAudio();
-function loadAudio(){
-    var counter=0;
-    audios=audios.map(function(array){
-        array=array.map(function(url){
-            var audio=new Audio(url);
-            audio.oncanplaythrough=function(){
-                counter++;
-                $('#audioLoad').text(Math.floor(counter/numOfAudios*100));
-                if(counter==numOfAudios){
-                    audioLoaded=true;
-                    // isLoaded();
-                }
-            };
-            return audio;
-        });
-        return array;
-    });
-}
-var images={};
-loadImages();
 
-function loadImages(){
-    let imageList = ["background", "ball", "p1", "p2", "portal"];
-    let numOfImages = imageList.length;
-    let counter=0;
-    for (let img of imageList) {
-        images[img] = new Image();
-        images[img].src = `assets/images/${img}.png`;
-    }
-    for (let img in images){
-        images[img].onload=function(){
-            this.imageReady=true;
-            counter++;
-            $('#imgLoad').text(Math.floor(counter/numOfImages*100));
-            if(counter==numOfImages) isLoaded();
-        }
-    }
-}
-function hideLoadingScreen(){
-    $('#loadingMenu').hide();
-    // $("#loadScreenPlayBtn").hide();
-}
-function isLoaded(){
-    var imagesLoaded=true;
-    var skipAudioLoad = true;
-    for (let img in images){
-        if (!images[img].imageReady){
-            imagesLoaded=false;
-        }
-    }
-    if(imagesLoaded && (audioLoaded||skipAudioLoad)){
-        $("#loadScreenPlayBtn").show();
-        $("#loadScreenPlayBtn").click(playGame);
-    }
-
+loadAudioEffects();
+function loadAudioEffects(){
+    audios=audios.map(url => new Audio(url))
 }
 
-function playGame(){
-    hideLoadingScreen();
-    var canvas=document.getElementById('game_canvas');
+const WINDOW_WIDTH_CANVAS_RATIO= 0.7;
+const WINDOW_HEIGHT_CANVAS_RATIO = 0.9;
+//canvas size
+//var scaleByWidth =true;
+//const aspectRatio=images.background.width/images.background.height;
+//if (aspectRatio * window.innerHeight > window.innerWidth) scaleByWidth = false;
+//console.log(aspectRatio,window.innerHeight, window.innerWidth, aspectRatio * window.innerHeight, aspectRatio * window.innerHeight > window.innerWidth);
+//if (scaleByWidth){
+//    canvas.width = window.innerWidth;
+//    canvas.height = canvas.width / aspectRatio;
+//} else {
+//    canvas.height = window.innerHeight;
+//    canvas.width = aspectRatio * canvas.height;
+//}
+//canvas.height *= 0.9;
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+//Settings
+var cWidth 	=	canvas.width;
+var cHeight	= 	canvas.height;
+var pHeight =	85 * PLAYER_SCALE;
+var pWidth 	=	15 * PLAYER_SCALE;
+var spacing =	10 * PLAYER_SCALE;
+var strpSize=	15;
+var stripClr=	"white";
+var playerSpeed=15;
+var playerAspectRatio = 0.25;
 
-    $('.input').keydown(setKey);
-    document.getElementById('multiplayer').addEventListener('click',toggleMultiplayer,false);
-    document.getElementById('graphics').addEventListener('click',toggleTheme,false);
-    document.getElementById('reset').addEventListener('click',reset,false);
+//Controls
+var default_settings=true;
+var multiplayer=false;
+var themeOn=true;
+var roundEdges=true;
+var default_speed=6;
+var difficulty=INIT_DIFFICULTY;
+var autoplay=true;
+var paused=false;
 
-    //key Press & mouse movement Listeners
-    window.addEventListener('keydown',keyPress,false);
-    window.addEventListener('keyup',keyPress,false);
-    canvas.addEventListener('mousemove',keyPress,false);
-    document.getElementsByName('difficulty').forEach(function(input){
-        input.addEventListener('change',setDifficulty,false);
-    });
+//game render interval
+var time=0;
+var frames={
+    //0  1	2  3  4
+    //5  6  7  8  9
+    //10 11 12 13 14
+    //15 16 17 18 19
 
-    //canvas size
-    const WINDOW_WIDTH_CANVAS_RATIO= 0.7;
-    const WINDOW_HEIGHT_CANVAS_RATIO = 0.9;
-    var ctx=canvas.getContext('2d');
-    var scaleByWidth =true;
-    const aspectRatio=images.background.width/images.background.height;
-    if (aspectRatio * window.innerHeight > window.innerWidth) scaleByWidth = false;
-    console.log(aspectRatio,window.innerHeight, window.innerWidth, aspectRatio * window.innerHeight, aspectRatio * window.innerHeight > window.innerWidth);
-    if (scaleByWidth){
-        canvas.width = window.innerWidth;
-        canvas.height = canvas.width / aspectRatio;
-    } else {
-        canvas.height = window.innerHeight;
-        canvas.width = aspectRatio * canvas.height;
-    }
-    canvas.height *= 0.9;
-//    const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
-//    const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
-//    let scaledMaxWidth = maxHeight * aspectRatio;
-//    let scaleFactor = Math.min(1, maxWidth/scaledMaxWidth);
-//    canvas.width=scaledMaxWidth * scaleFactor;
-//    canvas.height=maxHeight * scaleFactor;
+    frameRate: 5,
+    hit:0,
+    sprites:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
+    frameI:0,
+    frameJ:0
+}
 
-    //Settings
-    var fps		=	35;
-    var cWidth 	=	canvas.width;
-    var cHeight	= 	canvas.height;
-    var pHeight =	85;
-    var pWidth 	=	15;
-    var spacing =	10;
-    var strpSize=	15;
-    var stripClr=	"white";
-    var playerSpeed=20;
-
-    //Controls
-    var default_settings=true;
-    var multiplayer=false;
-    var themeOn=true;
-    var roundEdges=true;
-    var default_speed=6;
-    var difficulty=1.5;
-    var autoplay=true;
-    var paused=false;
-
-    //game render interval
-    requestAnimationFrame(render);
-//    setInterval(render,1000/fps);
-
-    if(!default_settings){
-        multiplayer=prompt('Please choose game mode. \n Singleplayer: (Enter) \n Multiplayer:  (any other key)') || false;
-    }
-    //game vars
-    //var index=0;
-    var time=0;
-    var frames={
-        //0  1	2  3  4
-        //5  6  7  8  9
-        //10 11 12 13 14
-        //15 16 17 18 19
-
-        frameRate: 5,
-        hit:0,
-        sprites:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
-        frameI:0,
-        frameJ:0
-    }
-    var fw=images.p1.width/5;
-    var fh=images.p1.height/4;
 
     //Players and ball Objects
-    var p1={
+    var player={
+        dead: false,
+        hp: INIT_HP,
         y:cHeight/2,
         size: pHeight,
         speed:playerSpeed,
@@ -368,8 +286,6 @@ function playGame(){
         points:0,
         up:false,
         down:false,
-        upkey:		87,	//W
-        downkey:	83,	//S
         bottom:function(){return this.y+this.size/2},
         top:function(){return this.y-this.size/2},
         checkRange: function(){
@@ -378,18 +294,15 @@ function playGame(){
         }
     }
 
-    var p2 = {
+    var computer = {
         y:cHeight/2,
         size:pHeight,
-        speed:5,
+        speed:PLAYER_SPEED,
         reverse: false,
         color:'blue',
         points:0,
         up:false,
         down:false,
-        upkey: 		38,	//up arrow
-        downkey: 	40,	//down arrow
-
         bottom:function(){return this.y+this.size/2},
         top:function(){return this.y-this.size/2},
         checkRange: function(){
@@ -401,233 +314,158 @@ function playGame(){
     var ball = {
         x:cWidth/2,
         y:cHeight/2,
-        xSpeed:-default_speed,
-        ySpeed:3,
+        xSpeed:-default_speed * difficulty,
+        ySpeed: randFloat(-MAX_BALL_Y_SPEED,MAX_BALL_Y_SPEED) * difficulty,
         radius:20,
         color:'red',
         draw : drawBall
     }
 
     const portal = new Portal(canvas, ball);
-    //Controls- functions
-    var pauseMenu= document.getElementById('pauseMenu');
-    var pauseBtn= document.getElementById('pauseBtn');
-    var message= document.getElementById('message');
 
-    function pause(msg, buttonTxt){
-        paused=!paused;
-        message.innerHTML=msg;
-        pauseBtn.innerHTML=buttonTxt;
-        pauseMenu.style.display= paused ? "inline-block":"none";
-        pauseBtn.onclick=function(){
-            pauseMenu.style.display="none";
-            paused=false;
-        };
-    }
+var fw, fh;
+function playGame(){
+    fw=images.player.width/5;
+    fh=images.player.height/4;
+    requestAnimationFrame(render);
+}
 
-    function toggleMultiplayer(){
-        multiplayer=this.checked;
-        p2.speed= multiplayer ? playerSpeed :p2.speed;
-    }
+function reset(){
+    score=0;
+    difficulty = INIT_DIFFICULTY;
+    player.dead = false;
+    player.hp = INIT_HP;
+    render();
+}
 
-    function toggleTheme(){
-        themeOn=this.checked;
-        ball.radius= themeOn ? ball.radius*1.5 : ball.radius/1.5;
-    }
+//key press handlers
+window.addEventListener('keydown',keyDown,false);
+window.addEventListener('keyup',keyUp,false);
 
-    function reset(){
-        p1.points=0;
-        p2.points=0;
-        render();
-        pause("Game reset", 'New Game');
-    }
-
-    function setDifficulty(e){
-        e.target.blur();
-        switch(e.target.value){
-            case 'easy': 	difficulty=1.5;
+    function keyDown(e){
+        var key=e.which || e.keyCode;
+        if (PRODUCTION)
+            e.preventDefault();
+        switch(key){
+            case UP:
+                player.up=true;
+                e.preventDefault();
                 break;
-            case 'medium': 	difficulty=2;
+            case DOWN:
+                player.down= true;
+                e.preventDefault();
                 break;
-            case 'hard':    difficulty=3;
+            case RESTART_KEY_CODE:
+                if (player.dead) reset();
                 break;
-            case 'insane':  difficulty=3.5;
-                break;
-        }
-        if(!multiplayer){p2.speed=5*difficulty;}
-
-        ball.xSpeed*=difficulty;
-        ball.ySpeed*=difficulty;
-    }
-
-    //key press handlers
-    function keyPress(e){
-        switch(e.type){
-            case "keydown":
-                var key=e.which || e.keyCode;
-                switch(key){
-                    case 27:
-                    case 13: pause("Game paused", "Continue");
-                        break;
-                    case p1.upkey: p1.up=true;
-                        break;
-                    case p1.downkey: p1.down= true;
-                        break;
-                    case p2.upkey: p2.up = multiplayer? true: false;
-                        break;
-                    case p2.downkey: p2.down=multiplayer? true: false;
-                        break;
-                }
-                break;
-
-            case 'keyup':
-                var key=e.which || e.keyCode;
-                switch(key){
-                    case p1.upkey: p1.up=false;
-                        break;
-                    case p1.downkey: p1.down= false;
-                        break;
-                    case p2.upkey: p2.up = false;
-                        break;
-                    case p2.downkey: p2.down=false;
-                        break;
-                }
-                break;
-            case 'mousemove':
-                p1.y=e.layerY; //-mouseFix;
-                p1.checkRange();
+            case MUTE_KEY:
+                toggleTheme();
                 break;
         }
     }
-
-    function setKey(e){
-        var key= e.which||e.keyCode;
-        if(key==9 || key==27 || key==13) return;	//prevent 'tab','esc', 'enter' keys
-        e.preventDefault();
-        this.value= e.key;
-        switch(this.id){
-            case 'p1_upkey': p1.upkey = key;
+    function keyUp(e){
+        var key=e.which || e.keyCode;
+        switch(key){
+            case UP: player.up=false;
                 break;
-            case 'p1_downkey': p1.downkey = key;
-                break;
-            case 'p2_upkey': p2.upkey = key;
-                break;
-            case 'p2_downkey': p2.downkey = key;
+            case DOWN: player.down=false;
                 break;
         }
-        this.value= this.value.indexOf('Arrow')==-1 ? this.value : this.value.substring(5);
-        this.blur();
     }
 
 
     //graphics
     function render(){
-        requestAnimationFrame(render);
-        if(paused) return;
+
         time++;
         drawBG();
-        movePlayers();
-        drawPlayers();
-        scoreBoard();
         middleLine();
-        moveBall();
-        portal.tick();
+        drawScoreBoard(score,highscore);
+        drawMessages();
+        drawHP();
+        if(!player.dead){
+            movePlayers();
+            moveBall();
+            portal.tick();
+            drawPlayers();
+            requestAnimationFrame(render);
+        }
+
     }
 
     function drawBG(){
-        if(themeOn){
-            ctx.drawImage(images.background,0,0, cWidth, cHeight);
-        } else{
-            rect(0,0,cWidth,cHeight,'black');
-        }
+        ctx.drawImage(images.background,0,0, cWidth, cHeight);
     }
-    function scoreBoard(){
-        ctx.fillStyle='white';
-        ctx.textAlign='center';
-        ctx.font='15px arial';
-        ctx.fillText('Player 1:', cWidth/4, cHeight/8);
-        ctx.fillText('Player 2:', 3*cWidth/4, cHeight/8);
-        ctx.font= '80px arial';
-        ctx.fillText(p1.points, cWidth/4, cHeight/8 + 70);
-        ctx.fillText(p2.points, 3*cWidth/4, cHeight/8 + 70);/**/
-        ctx.font="20px arial";
-    }
+
     function drawPlayers(){
-        if(themeOn){
-            drawPlayers2();
-            return;
-        }
-        if(!roundEdges){
-            rect(spacing,	p1.y-p1.size/2,	pWidth, p1.size, p1.color, false);
-            rect(spacing,	p2.y-p2.size/2,	pWidth, p2.size, p2.color, true);	//true= invertX
-            return;
-        }
-        rect2(spacing,	p1.y-p1.size/2,	pWidth, p1.size, p1.color, false);
-        rect2(spacing,	p2.y-p2.size/2,	pWidth, p2.size, p2.color, true);	//true= invertX
-
-        computerMove();
-    }
-
-    function drawPlayers2(){
         animate();
         computerMove();
     }
+
     function animate(){
         var arr= frames.sprites;
         var index=(Math.floor(time/frames.frameRate) % arr.length);
         frames.frameI= index % 5;
         frames.frameJ=Math.floor(arr[index]/5);
-        //animate p1
+        //animate player
         ctx.save();
-        ctx.translate(spacing*2,p1.y);
+        ctx.translate(spacing*2,player.y);
         ctx.rotate(35*Math.PI/180);
-        ctx.drawImage(images.p1,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fh/2);
+        rect(-fw/4,-fh/4, fw/2*PLAYER_SCALE,fh/2*PLAYER_SCALE, 'red', 0.5);
+        ctx.drawImage(images.player,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2*PLAYER_SCALE,fh/2*PLAYER_SCALE);
+//        rect(-fw/4,-fh/4, fw/2,fh/2, 'red', 0.5);
+//        ctx.drawImage(images.player,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fh/2);
         ctx.restore();
-        //animate p2
+        //animate computer
         ctx.save();
-        ctx.translate(cWidth-spacing*2,p2.y);
+        ctx.translate(cWidth-spacing*2,computer.y);
         ctx.rotate(-35*Math.PI/180);
-        ctx.drawImage(images.p2,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fw/2);
+        ctx.drawImage(images.computer,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fw/2);
         ctx.restore();
     }
 
     //Game logics
-    //p1=true, p2=false
-    function score(player1){
+    //player=true, computer=false
+    function doScore(isPlayer1){
         ball.x=cWidth/2;
         ball.y=cHeight/2;
         ball.xSpeed=default_speed*difficulty*0.7;
-        ball.ySpeed=((Math.random()*10)-5)*difficulty;
+        ball.ySpeed=0
         while (ball.ySpeed==0){
-            ball.ySpeed=((Math.random()*10)-5)*difficulty;
+            ball.ySpeed=randFloat(-MAX_BALL_Y_SPEED,MAX_BALL_Y_SPEED)*difficulty;
+            ball.ySpeed= 1;
         }
-        if(player1){
-            p1.points++;
+        if(isPlayer1){
+            player.points++;
+            updateScore(score + 1);
         }
         else{
-            p2.points++;
+            computer.points++;
             ball.xSpeed= -ball.xSpeed; //ball goes to P1's direction
+            player.hp--;
+            if (player.hp == 0){
+                player.dead = true;
+                paused = true;
+                submitHighScore();
+            }
         }
-        postScore(difficulty)
     }
 
     function checkWin(player1){
         var goal= document.getElementById('goal').value;
         var index=1;
         if(player1){
-            if (p1.points==goal){
-                pause("Player 1 won!", "New Game");
-                p1.points=0;
-                p2.points=0;
+            if (player.points==goal){
+                player.points=0;
+                computer.points=0;
                 index=2;
             }
             else index=0;
         }
         else{ //player 2
-            if(p2.points==goal){
-                pause("Player 2 won!", "New Game");
-                p1.points=0;
-                p2.points=0;
+            if(computer.points==goal){
+                player.points=0;
+                computer.points=0;
                 index=3;
             }
             else index=1;
@@ -637,35 +475,31 @@ function playGame(){
     }
 
     function movePlayers(){
-        if(p1.up){
-            p1.y-=p1.speed;
-            p1.checkRange();
+        if(player.up){
+            player.y-=player.speed;
+            player.checkRange();
         }
-        if(p1.down){
-            p1.y+=p1.speed;
-            p1.checkRange();
+        if(player.down){
+            player.y+=player.speed;
+            player.checkRange();
         }
-        if(p2.up){
-            p2.y-=p2.speed;
-            p2.checkRange();
+        if(computer.up){
+            computer.y-=computer.speed;
+            computer.checkRange();
         }
-        if(p2.down){
-            p2.y+=p2.speed;
-            p2.checkRange();
+        if(computer.down){
+            computer.y+=computer.speed;
+            computer.checkRange();
         }
     }
     function drawBall(){
-        if (themeOn){ //Morty ball
-            ctx.save();
-            ctx.translate(ball.x,ball.y);
-            ctx.rotate((time/50)*ball.xSpeed);
-            ctx.drawImage(images.ball, 0,0,images.ball.width, images.ball.height, -ball.radius, -ball.radius, ball.radius*2, ball.radius*2);
-            ctx.restore();
-        }
-        else{ //Red Ball
-            circle(ball.x, ball.y, ball.radius, ball.color);
-        }
+        ctx.save();
+        ctx.translate(ball.x,ball.y);
+        ctx.rotate((time/50)*ball.xSpeed);
+        ctx.drawImage(images.ball, 0,0,images.ball.width, images.ball.height, -ball.radius, -ball.radius, ball.radius*2, ball.radius*2);
+        ctx.restore();
     }
+
     function moveBall(){
         //if hits horizontal walls, change direction.
         if((ball.y+ ball.radius > cHeight) || (ball.y -ball.radius < 0)){
@@ -675,54 +509,52 @@ function playGame(){
         }
         //if right player scores
         if((ball.x - ball.radius) <= 0){
-            score(false);
-            checkWin(false);
+            doScore(false);
         }
         //if left player scores
         if((ball.x + ball.radius) >= cWidth){
-            score(true);
-            checkWin(true);
+            doScore(true);
         }
         var topDist, bottomDist;
 
         //if left player hit the ball
         if(ball.xSpeed < 0
             && ((ball.x - ball.radius) <= (spacing+ pWidth))
-            && ((ball.y + ball.radius) >= (p1.y - p1.size/2))
-            && ((ball.y - ball.radius) <= (p1.y + p1.size/2))){
+            && ((ball.y + ball.radius) >= (player.y - player.size/2))
+            && ((ball.y - ball.radius) <= (player.y + player.size/2))){
             ball.xSpeed= -ball.xSpeed;	//change direction;
 
             //Check for corner hit
-            topDist=p1.top()-ball.y+ ball.radius;
-            bottomDist=ball.y- p1.bottom() +ball.radius;
+            topDist=player.top()-ball.y+ ball.radius;
+            bottomDist=ball.y- player.bottom() +ball.radius;
             if (topDist > 0){
-                ball.xSpeed += topDist/4;
-                ball.ySpeed = -topDist/2;
+                ball.xSpeed += topDist*CORNER_HIT_SPEED_FACT_X;
+                ball.ySpeed = -topDist*CORNER_HIT_SPEED_FACT_Y;
             }
             if (bottomDist > 0){
-                ball.xSpeed += bottomDist/4;
-                ball.ySpeed = bottomDist/2;
+                ball.xSpeed += bottomDist*CORNER_HIT_SPEED_FACT_X;
+                ball.ySpeed = bottomDist*CORNER_HIT_SPEED_FACT_Y;
             }
         }
 
         //if right player hit the ball
         if(ball.xSpeed > 0
             && ((ball.x + ball.radius) >= (cWidth - spacing - pWidth))
-            && ((ball.y+ ball.radius) >= (p2.y-p2.size/2))
-            && ((ball.y - ball.radius) <= (p2.y + p2.size/2))){
+            && ((ball.y+ ball.radius) >= (computer.y-computer.size/2))
+            && ((ball.y - ball.radius) <= (computer.y + computer.size/2))){
             ball.xSpeed= -ball.xSpeed;	//change direction;
 
             //Check for corner hit
-            topDist=p2.top()-ball.y+ ball.radius;
-            bottomDist=ball.y- p2.bottom() +ball.radius;
+            topDist=computer.top()-ball.y+ ball.radius;
+            bottomDist=ball.y- computer.bottom() +ball.radius;
             if (topDist > 0){
-                ball.xSpeed -= topDist/4;
-                ball.ySpeed = -topDist/2;
+                ball.xSpeed -= topDist*CORNER_HIT_SPEED_FACT_X;
+                ball.ySpeed = -topDist*CORNER_HIT_SPEED_FACT_Y;
 
             }
             if (bottomDist > 0){
-                ball.xSpeed -= bottomDist/4;
-                ball.ySpeed = bottomDist/2;
+                ball.xSpeed -= bottomDist*CORNER_HIT_SPEED_FACT_X;
+                ball.ySpeed = bottomDist*CORNER_HIT_SPEED_FACT_Y;
             }
         }
         //Assure speed threshold is met
@@ -735,45 +567,14 @@ function playGame(){
     }
 
     function computerMove(){
-        if(!multiplayer){
-            if (p2.y< ball.y){
-                p2.y+=p2.speed;
-                p2.checkRange();
-            }
-            if(p2.y>ball.y){
-                p2.y -= p2.speed;
-                p2.checkRange()
-            }
+        if (computer.y< ball.y){
+            computer.y+=computer.speed;
+            computer.checkRange();
         }
-    }
-
-    //Canvas shapes
-    function rect(xPos,yPos,width,height,color,invertX){
-        ctx.fillStyle=color;
-        if(invertX){
-            xPos= -xPos+cWidth-pWidth
+        if(computer.y>ball.y){
+            computer.y -= computer.speed;
+            computer.checkRange()
         }
-        ctx.fillRect(xPos,yPos,width,height);
-    }
-    function circle(xPos,yPos,radius,color){
-        ctx.fillStyle=color;
-        ctx.beginPath();
-        ctx.arc(xPos,yPos,radius,0,2*Math.PI,false);
-        ctx.fill();
-    }
-
-    function rect2(xPos,yPos,width,height,color,invertX){
-        if(invertX){
-            xPos= -xPos+cWidth-width;
-        }
-        ctx.beginPath();
-        ctx.fillStyle=color;
-        ctx.moveTo(xPos,yPos);
-        ctx.lineTo(xPos,yPos+height);
-        ctx.arc(xPos+width/2,yPos+height,width/2,Math.PI, 0,true);
-        ctx.lineTo(xPos+width,yPos);
-        ctx.arc(xPos+width/2,yPos,width/2,0,Math.PI,true);
-        ctx.fill();
     }
 
     function middleLine(){
@@ -790,12 +591,6 @@ function playGame(){
         ctx.stroke();
     }
 
-    //Sound controls
-
-    /*	0: p1 score;
-    1: p2 score;
-    2: p1 win;
-    3: p2 win */
     function playRandomAudio(event){
         if(!themeOn) return;
         var length=audios[event].length;
@@ -803,27 +598,44 @@ function playGame(){
         audios[event][index].play();
     }
 
-    $(document).ready(function(){
-        $('#theme').prop('volume', 0.2);
-        $('#theme').prop('autoplay', autoplay ? true:false);
-        $('#theme').prop('loop', true);
-        $('#theme').prop('currentTime', 8.4);
-
-        $('#mute_btn').click(function(){
-            let muted = $('#theme').prop("muted");
-            $(this).toggleClass("glyphicon glyphicon-volume-up");
-            $(this).toggleClass("glyphicon glyphicon-volume-off");
-            $('#theme').prop("muted", !muted);
-            if (muted)
-                $('#theme')[0].play();
-            else
-                $('#theme')[0].pause();
-        });
-        $('#volume_up').click(function(){
-            $('#theme')[0].volume+=0.05;
-        });
-        $('#volume_down').click(function(){
-            $('#theme')[0].volume-=0.05;
-        });
-    });
+// scoreboard
+var highscore = 0;
+var score = 0;
+var prevScore = 0;
+function updateScore(val) {
+    if (!player.dead){
+        score = val;
+        if (score - prevScore > DIFFICULTY_STEP){
+            difficulty+= 0.5;
+        }
+        if (score - prevScore >= SUBMIT_SCORE_DELTA) {
+            let normalizedScore = (score- prevScore)/SUBMIT_SCORE_DELTA;
+            postScore(normalizedScore);
+            prevScore = score;
+        }
+    }
 }
+
+function initHighScore(){
+    getGameHighScore('pong')
+    .then(gameHighScore => highscore = gameHighScore);
+}   
+function submitHighScore(){
+    postGameHighScore('pong', score)
+    .then(gameHighScore => highscore = gameHighScore);
+}
+
+function drawMessages(){
+    ctx.fillStyle='white';
+    ctx.font='20px arial';
+    if (player.dead){
+        ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
+    }
+    ctx.fillText("[ARROW KEYS:move (Hit edge to boost)][M: toggle music]", cWidth/2, 30);
+
+}
+
+let imageList = ["background", "player", "computer", "portal", "heart", "ball"];
+let audioList = ["theme"];
+
+loadGame(imageList, audioList).then(playGame);
