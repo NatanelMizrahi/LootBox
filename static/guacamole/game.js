@@ -1,27 +1,21 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame} from '../common/common.js';
 
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
 const UP = 38;
 const DOWN = 40;
-const RESTART_KEY_CODE = 82;
 const HIT_KEY = 32; // space
 
 // animation
 const INITIAL_BG_VX = 1;
-const PLAYER_ANIMATION_INTERVAL = 4;
-const FLAME_ANIMATION_INTERVAL = 3;
 const N_PLAYER_FRAMES = 4;
 const MAX_PLAYER_Y_MARGIN = 50;
 
 //STATES
 const IDLE = "IDLE";
-const HIT = "HIT"
-const DEAD = "DEAD";
-const JUMPING = "JUMPING";
-const RUNNING = "RUNNING";
+const HIT = "HIT";
 
 const stateFrames = {
     IDLE: [0],
@@ -32,60 +26,14 @@ const stateFrames = {
 const SUBMIT_SCORE_DELTA = 10;
 
 // PHYSICS
-//const ALLOW_WRAP = true;
-const ALLOW_WRAP = true ;
-const G = 2;
-const FRICTION = 1.2;
-
-const PLAYER_AX = 0.9;
+const ALLOW_WRAP = false;
 const MAX_PLAYER_VX = 20;
-const PLAYER_JUMP_VY = 10*G;
-const PLAYER_DEAD_VY = 4;
-const VX_JUMP_FACT = 0.03;
-const VX_WALLJUMP_FACT = 2 * VX_JUMP_FACT;
 
-const PLATFORM_AY = 0.004;
-const PLATFORM_INITIAL_VY = 3;
-const PLATFORM_FALL_DELAY = 70;
-const PLATFORM_PRE_FALL_SHAKE_DY = 5;
-const MOVING_PLATFORM_VX = 1;
+const SPAWN_CHANCE = 0.002;
+const INITIAL_MAX_AVOCADOS = 3;
+const MAX_AVOCADOS_STEP = 10;
 
-var platform_vy = PLATFORM_INITIAL_VY;
-
-// misc.
-const PRODUCTION = false;
-const THEME_ON = true;
-const SHOW_HITBOX = false;
-const FLAMES_ON_DEAD_ONLY = false;
-const gameOverMessage = `GAME OVER (press ${String.fromCharCode(RESTART_KEY_CODE).toUpperCase()} to replay)`;
-
-//sizes
-const WALL_WIDTH = 35;
-const PLAYER_R = 20;
-const SCALE_PLAYER_IMG = 1.4;
-const PLATFORM_HEIGHT = 1.5 * PLAYER_R;
-
-// flames
-const FLAME_SIZE = 30;
-const FLAME_SPACE = 40;
-const N_FLAME_FRAMES = 12;
-const N_FLAME_FRAMES_X = 4;
-const N_FLAME_FRAMES_Y = 3;
-const MIN_FLAME_SCALE = 0.7;
-const MAX_FLAME_SCALE = 5;
-
-// platforms
-const PLATFORMS_Y_INTERVAL = 5*PLAYER_R;
-const MIN_PLATFORM_W = 100;
-const MAX_PLATFORM_W = 400;
-const MOVING_PLATFORM_CHANCE = 0.3;
-const FALLING_PLATFORM_CHANCE = 1;
-
-const images = {};
-
-
-
-const HOLE_W = 100;//50;
+const HOLE_W = 100; //50;
 const HOLE_H = HOLE_W;
 const MALLET_W = HOLE_W * 1.1;
 const MALLET_H = HOLE_H * 1.1;
@@ -104,32 +52,27 @@ const N_HOLES_X = 5; //6;
 const N_HOLES_Y = 5; //4;
 const MALLET_MAX_X = (N_HOLES_X-1) * HOLE_W + HOLES_OFFSET_X;
 const MALLET_MAX_Y = (N_HOLES_Y-1) * HOLE_H + HOLES_OFFSET_Y;
+const HEART_SIZE = 30;
+const INIT_HP = 10;
 
-const BOSS_CHANCE = 0.3;
+
+const MIN_AVO_SPEED = 2;
+const MAX_AVO_SPEED = 5;
+const MIN_AVO_DURATION = 150;
+const MAX_AVO_DURATION = 250;
+const AVO_DELAY = 20;
+const HITTABLE_THRESHOLD = 0.25;
+
+const BOSS_CHANCE = 0.1;
 const BOSS_HP = 3
 const BOSS_SCORE = BOSS_HP;
 const BOSS_DURATION_RATIO = 1.15;
 
-const canvas = document.getElementById('game_canvas');
-const ctx = canvas.getContext('2d');
+
 canvas.width = N_HOLES_X * HOLE_W + PADDING + HOLES_OFFSET_X;
 canvas.height = N_HOLES_Y * HOLE_H + PADDING + HOLES_OFFSET_Y;
 const cWidth = canvas.width;
 const cHeight = canvas.height;
-
-function rect(xPos, yPos, width, height, color, alpha=1) {
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = color;
-    ctx.fillRect(xPos, yPos, width, height);
-    ctx.globalAlpha = 1;
-}
-
-function circle(xPos, yPos, radius, color) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(xPos, cHeight - yPos, radius, 0, 2 * Math.PI, false);
-    ctx.fill();
-}
 
 // background
 var backgroundVX = INITIAL_BG_VX;
@@ -156,16 +99,22 @@ function drawBG() {
     }
 }
 
+function drawHP(){
+    for (let i = 0; i < player.hp; i++){
+        ctx.drawImage(images.heart, i * HEART_SIZE, HEART_SIZE, HEART_SIZE, HEART_SIZE);
+    }
+}
+
 var player = {
     color: 'red',
     dead: false,
-    r: PLAYER_R,
     x: HOLES_OFFSET_X,
     y: HOLES_OFFSET_Y,
     w: MALLET_W,
     h: MALLET_H,
     vx: 0,
     vy: 0,
+    hp: INIT_HP,
     boardX: 0,
     boardY: 0,
     tgtX: HOLES_OFFSET_X,
@@ -179,6 +128,13 @@ var player = {
         let avocadoInHole = avocados[this.boardY][this.boardX];
         if (avocadoInHole != null)
             avocadoInHole.hit();
+    },
+    miss: function(){
+        this.hp--;
+        if (this.hp == 0){
+            this.dead = true;
+            submitHighScore();
+        }
     },
     moveX: function(direction){
         this.movingX = true;
@@ -197,7 +153,6 @@ var player = {
         this.vx = (prevBoardX < this.boardX) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtX = HOLES_OFFSET_X + this.boardX * HOLE_W;
         this.vx = this.x < this.tgtX ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
-//        console.log(prevBoardX, this.boardX, this.tgtX, this.vx);
     },
     moveY: function(direction){
         this.movingY = true;
@@ -214,12 +169,6 @@ var player = {
         this.vy = (prevBoardY < this.boardY) ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
         this.tgtY = HOLES_OFFSET_Y + this.boardY * HOLE_H;
         this.vy = this.y < this.tgtY ? MAX_PLAYER_VX : -MAX_PLAYER_VX;
-    },
-    clampCoords: function(){
-        this.x = clamp(this.x, HOLES_OFFSET_X, MALLET_MAX_X);
-        this.y = clamp(this.y, HOLES_OFFSET_Y, MALLET_MAX_Y);
-        if(SHOW_HITBOX)
-            rect(HOLES_OFFSET_X, HOLES_OFFSET_Y, MALLET_MAX_X, MALLET_MAX_Y, 'black', 0.6);
     },
     move: function(direction) {
         switch(direction){
@@ -268,12 +217,10 @@ var player = {
                 this.y += this.vy;
             }
         }
-//        this.clampCoords(); // TODO uncomment and debug
     },
     // player animation
     currFrameIdx: 0,
     animationFrameArr: stateFrames[IDLE],
-    animationIntervalCounter: PLAYER_ANIMATION_INTERVAL,
     draw: function() {
         this.updateCoords();
         let img = images.mallet;
@@ -284,43 +231,31 @@ var player = {
         let fh = img.height;
         let fx = xOffset * fw;
         let fy = yOffset * fh;
-        let fr = SCALE_PLAYER_IMG * this.r;
         if (SHOW_HITBOX)
             rect(this.x, this.y, this.w, this.h, this.color, 0.5);
-        ctx.drawImage(img, fx, fy, fw, fh, this.x + MALLET_OFFSET_X, this.y + + MALLET_OFFSET_Y, this.w, this.h);
+        ctx.drawImage(img, fx, fy, fw, fh, this.x + MALLET_OFFSET_X, this.y + MALLET_OFFSET_Y, this.w, this.h);
         this.currFrameIdx = (this.currFrameIdx + 1) % this.animationFrameArr.length;
         this.checkIdle();
+    },
+    reset: function() {
+        this.dead = false;
+        this.x = HOLES_OFFSET_X;
+        this.y = HOLES_OFFSET_Y;
+        this.w = MALLET_W;
+        this.h = MALLET_H;
+        this.vx = 0;
+        this.vy = 0;
+        this.hp = INIT_HP;
+        this.boardX = 0;
+        this.boardY = 0;
+        this.tgtX = HOLES_OFFSET_X;
+        this.tgtY = HOLES_OFFSET_Y;
+        this.movingX = false;
+        this.movingY = false;
+        this.wrapping = false;
+        this.state = IDLE;
+        this.animationFrameArr = stateFrames[this.state];
     }
-}
-
-// walls
-var wallPattern;
-function initWalls() {
-    wallPattern = ctx.createPattern(images.wall, 'repeat');
-}
-
-function drawWalls() {
-    rect(0, 0, WALL_WIDTH, cHeight, wallPattern);                   // LEFT WALL
-    rect(cWidth - WALL_WIDTH, 0, WALL_WIDTH, cHeight, wallPattern); // RIGHT WALL
-}
-
-// aux functions
-function range(min, max) {
-    let arr = [];
-    for (let i = min; i <= max; i++) arr.push(i);
-    return arr;
-}
-
-function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + Math.ceil(min);
-}
-
-function randFloat(min, max) {
-    return (Math.random() * (max - min)) + min;
-}
-
-function clamp(val, min, max) {
-    return Math.min(Math.max(val, min), max);
 }
 
 // scoreboard
@@ -330,6 +265,7 @@ var prevScore = 0;
 function updateScore(val) {
     if (!player.dead){
         score = Math.max(val,score);
+        maxAvocados = Math.max(INITIAL_MAX_AVOCADOS, Math.floor(score / MAX_AVOCADOS_STEP));
         if (score - prevScore > SUBMIT_SCORE_DELTA) {
             let normalizedScore = (score - prevScore)/SUBMIT_SCORE_DELTA;
             postScore(normalizedScore);
@@ -339,86 +275,23 @@ function updateScore(val) {
 }
 
 function initHighScore(){
-    getGameHighScore('tower')
+    getGameHighScore('guacamole')
     .then(gameHighScore => highscore = gameHighScore);
 }
 function submitHighScore(){
-    postGameHighScore('tower', score)
+    postGameHighScore('guacamole', score)
     .then(gameHighScore => highscore = gameHighScore);
 }
 
-function drawScoreBoard(){
-    ctx.textAlign='center';
+function drawMessages(){
     ctx.fillStyle='white';
-    ctx.font= '80px arial';
-    ctx.fillText(score,           cWidth/4, cHeight/8 + 70);
-    ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
     ctx.font='20px arial';
-    ctx.fillText('Score',         cWidth/4, cHeight/8);
-    ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
-
     if (player.dead){
-        if (THEME_ON) ctx.fillStyle='black';
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
+    ctx.fillText("[SPACE:hit][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
+
 }
-
-
-// key Press EventListeners
-window.addEventListener('keydown', keyDown, false);
-
-function keyDown(e) {
-    if (e.repeat) return;
-    var key = e.which || e.keyCode;
-    if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
-    switch (key) {
-        case UP:
-        case DOWN:
-        case LEFT:
-        case RIGHT:
-            player.move(key);
-            break;
-        case HIT_KEY:
-            player.hit();
-            break
-    }
-}
-
-// render
-function render() {
-    drawBG();
-    drawScoreBoard();
-    drawHoles();
-    drawAvocados();
-    player.draw();
-    requestAnimationFrame(render);
-}
-
-
-function loadImages() {
-    let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow"];
-    let imageLoadedPromises = [];
-    for (let img of imageList) {
-        images[img] = new Image();
-        images[img].src = `assets/images/${img}.png`;
-        imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
-    }
-    Promise.all(imageLoadedPromises).then(loaded => {
-        initHoles();
-        initAvocados();
-        initBackground();
-        initHighScore();
-        requestAnimationFrame(render);
-    });
-}
-
-function main() {
-    loadImages();
-}
-
-main();
-
-
 
 
 function createHolePattern(){
@@ -443,13 +316,8 @@ function drawHoles(){
 
 
 var avocados;
-
-const MIN_AVO_SPEED = 2;
-const MAX_AVO_SPEED = 5;
-const MIN_AVO_DURATION = 50;
-const MAX_AVO_DURATION = 150;
-const AVO_DELAY = 20;
-const HITTABLE_THRESHOLD = 0.25;
+var numAvocados = 0;
+var maxAvocados = INITIAL_MAX_AVOCADOS;
 
 function initAvocados(){
     avocados = initAvocadosMatrix();
@@ -464,15 +332,21 @@ function initAvocadosMatrix(){
     }
     return arr;
 }
-const SPAWN_CHANCE = 0.001;
+
 function drawAvocados(){
-    for (let i = 0; i< N_HOLES_Y; i++){
-        for (let j = 0; j< N_HOLES_X; j++){
-            if (avocados[i][j] == null && (randFloat(0,1) < SPAWN_CHANCE)){
-                addAvocado(i,j);
+    if (numAvocados < maxAvocados && !player.dead) {
+        for (let i = 0; i< N_HOLES_Y; i++){
+            for (let j = 0; j< N_HOLES_X; j++){
+                if (avocados[i][j] == null && (randFloat(0,1) < SPAWN_CHANCE)){
+                    addAvocado(i,j);
+                }
             }
-            if (avocados[i][j] != null)
-                avocados[i][j].draw();
+        }
+    }
+    for (let row of avocados){
+        for (let avo of row){
+            if (avo != null)
+                avo.draw();
         }
     }
 }
@@ -511,13 +385,15 @@ function addAvocado(i,j){
             if (this.y < this.tgtY){
                 this.y = this.tgtY;
             }
-            if (this.hidden()){
+            if (!this.dead && this.hidden()){
                 this.die();
+                player.miss();
             }
             if (this.dead) {
                 this.delay--;
                 if (this.delay == 0){
                     avocados[this.boardY][this.boardX] = null;
+                    numAvocados--;
                 }
             }
             this.duration--;
@@ -547,7 +423,6 @@ function addAvocado(i,j){
         drawAvo: function (){
             if (SHOW_HITBOX)
                 rect(this.x, this.y, this.w, this.h, 'black', 0.4);
-            // TODO: path is fixed, try to export
             ctx.save();
             ctx.beginPath();
             let holeCenterX = this.holeX + HOLE_W/2;
@@ -582,4 +457,64 @@ function addAvocado(i,j){
         }
     }
     avocados[i][j] = avocado;
+    numAvocados++;
 }
+
+
+// key Press EventListeners
+window.addEventListener('keydown', keyDown, false);
+
+function keyDown(e) {
+    if (e.repeat) return;
+    var key = e.which || e.keyCode;
+    if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
+    switch (key) {
+        case UP:
+        case DOWN:
+        case LEFT:
+        case RIGHT:
+            player.move(key);
+            break;
+        case HIT_KEY:
+            player.hit();
+            break
+        case RESTART_KEY_CODE:
+            if (player.dead) reset(); //location.reload();
+            break;
+        case MUTE_KEY:
+            toggleTheme();
+            break;
+    }
+}
+
+// render
+function render() {
+    drawBG();
+    drawHP();
+
+    drawHoles();
+    drawAvocados();
+    player.draw();
+    drawScoreBoard(score,highscore);
+    drawMessages();
+    requestAnimationFrame(render);
+}
+
+function reset(){
+    score = 0;
+    prevScore = 0;
+    player.reset();
+}
+
+function playGame() {
+    initHoles();
+    initAvocados();
+    initBackground();
+    initHighScore();
+    requestAnimationFrame(render);
+}
+
+let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
+let audioList = ["theme"];
+
+loadGame(imageList, audioList).then(playGame);
