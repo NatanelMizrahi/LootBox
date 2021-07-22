@@ -1,15 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-
-// const fetch = require('node-fetch');
-const PORT = 5000
-const HTTP_HEADER = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json, text/plain, */*',
-    'Access-Control-Allow-Origin': '*',
-    'User-Agent': '*',
-};
-
-
+import {THEME_ON, SHOW_HITBOX, canvas, ctx, clamp,} from '../common/common.js'
 
 // SCORE
 const SUBMIT_SCORE_DELTA = 10;
@@ -72,20 +62,17 @@ function loadImages() {
     }
     Promise.all(imageLoadedPromises).then(loaded => {
         playGame();
+        initHighScore();
     });
 }
 
 
-
 function playGame() {
-    var canvas = document.getElementById('game_canvas');
-
     //canvas size
     const WINDOW_WIDTH_CANVAS_RATIO = 0.7;
     const WINDOW_HEIGHT_CANVAS_RATIO = 1;
-    var ctx = canvas.getContext('2d');
 
-    const aspectRatio = 16/9 // images.flappybg.width / images.flappybg.height;
+    const aspectRatio = 16 / 9 // images.flappybg.width / images.flappybg.height;
     const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
     const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
     let scaledMaxWidth = maxHeight * aspectRatio;
@@ -101,8 +88,6 @@ function playGame() {
     var pWidth = 15;
 
     //Controls
-    var themeOn = true;
-    const showHitBox = false;
     var paused = false;
 
     //game render interval
@@ -156,10 +141,11 @@ function playGame() {
         obstacles = []
         player.distanceCovered = 0
         player.y = cHeight / 2
-        player.vy = player.InitialVY
+        player.x = player.initialX
+        player.vy = player.initialVY
         previousRenderTime = nowSec();
         prevGenDistance = 0;
-
+        sceneSpeed = sceneInitialSpeed;
     }
 
     function render() {
@@ -180,20 +166,21 @@ function playGame() {
 
         requestAnimationFrame(render);
     }
+    const sceneInitialSpeed = 300;
+    const sceneAcceleration = 10;
+    let sceneSpeed = sceneInitialSpeed;
 
-    const sceneSpeed = 300;
     let prevGenDistance = 0;
     let obstacles = [];
 
     function renderObstacles(now, dt) {
-        const obstacleGenInteval = 300 + (1200 - 300) * Math.random()
-        if (player.distanceCovered > (prevGenDistance + obstacleGenInteval)) {
+        const obstacleGenInterval = 300 + (1200 - 300) * Math.random()
+        if (player.distanceCovered > (prevGenDistance + obstacleGenInterval)) {
             prevGenDistance = player.distanceCovered
             let obstacle = {
                 y: cHeight,
                 x: cWidth,
                 scale: (0.3 + 1.7 * Math.random()),
-                speed: sceneSpeed,
                 up: false,
                 down: false,
                 checkRange: function () {
@@ -233,7 +220,7 @@ function playGame() {
                 const index = (Math.floor(now * cactusFrames.frameRate) % arr.length);
                 cactusFrames.frameI = index % numCactusW;
                 cactusFrames.frameJ = Math.floor(index / numCactusH);
-                if (showHitBox) {
+                if (SHOW_HITBOX) {
                     ctx.save()
                     circle(obstacle.x, obstacle.y, obstacle.hitBoxRadius(), 'red')
                     ctx.restore()
@@ -243,7 +230,7 @@ function playGame() {
                     images.cactus, cactusW * cactusFrames.frameI, cactusH * cactusFrames.frameJ, cactusW, cactusH,
                     obstacle.x - obstacle.radiusX(), obstacle.y - obstacle.radiusY(), obstacle.radiusX() * 2, obstacle.radiusY() * 2
                 );
-                if (showHitBox) {
+                if (SHOW_HITBOX) {
                     ctx.beginPath();
                     ctx.strokeStyle = 'green';
                     ctx.moveTo(obstacle.x, obstacle.y)
@@ -266,11 +253,21 @@ function playGame() {
         score: 0,
         scale: 0.5,
         up: false,
+        right: false,
+        left: false,
         vy: -500,
-        InitialVY: -500,
-        upkey: 87,	//W
+        vx: 500,
+        initialX: 100,
+        initialVY: -500,
+        upKey: 38,
+        rightKey: 39,
+        leftKey: 37,
+        downKey: 40,
+        Key: 37,
         yMax: cHeight,
         yMin: 0,
+        xMax: cWidth,
+        xMin: 0,
         distanceCovered: 0,
         getCenter: function () {
             return [this.x + this.radius, this.y + this.radius]
@@ -284,29 +281,64 @@ function playGame() {
             const acceleration = 1500.0 * (this.up ? -1.0 : 1.0) // pixels / s^2
             this.vy = this.vy + acceleration * dt
             const new_y = this.y + this.vy * dt + 0.5 * acceleration * dt * dt
-            this.y = Math.min(Math.max(new_y, this.yMin), this.yMax)
+            this.y = clamp(new_y, this.yMin, this.yMax)
             if (this.y !== new_y) this.vy = 0
+            let new_x = this.x
+            if (this.right) {
+                new_x += this.vx * dt
+            } else if (this.left) {
+                new_x -= this.vx * dt
+            }
+            this.x = clamp(new_x, this.xMin, this.xMax)
         },
 
         onUpKeyPress: function (e) {
-            // if (e.keyCode !== this.upkey) return;
-//            var key = e.which || e.keyCode;
-//            if (key != 82 && key != 123 || PRODUCTION) e.preventDefault();
-//            if (key == RESTART_KEY_CODE && this.dead) resetGameState()
-            this.up = true
-
-            if (!e.repeat) {
-                this.vy = 0
+            switch (e.keyCode) {
+                case this.upKey: {
+                    this.up = true
+                    if (!e.repeat) {
+                        this.vy = 0
+                    }
+                    break;
+                }
+                case this.rightKey: {
+                    this.right = true
+                    break;
+                }
+                case this.leftKey: {
+                    this.left = true
+                    break;
+                }
+                case this.downKey: {
+                    this.up = false;
+                    if (!e.repeat && this.vy <= 0){
+                        this.vy = 0;
+                    }
+                    break;
+                }
             }
         },
         onUpKeyRelease: function (e) {
             // if (e.keyCode !== this.upkey) return;
-            this.up = false
+            switch (e.keyCode) {
+                case this.upKey: {
+                    this.up = false
+                    break;
+                }
+                case this.rightKey: {
+                    this.right = false
+                    break;
+                }
+                case this.leftKey: {
+                    this.left = false
+                    break;
+                }
+            }
         },
         calcScore: function (dt) {
             this.distanceCovered += sceneSpeed * dt
             this.score = Math.floor(this.distanceCovered * 0.02)
-            if (this.score % 20 == 0) {
+            if ((this.score % 20) === 0) {
                 updateScore(this.score / 2);
             }
         },
@@ -315,7 +347,7 @@ function playGame() {
             return this.radius * this.hitBoxFactor
         },
         touchesFloorOrCeiling: function () {
-            return ((this.y + this.radius) >= cHeight) || ((this.y - this.radius) <= 0);
+            return (this.y >= cHeight) || (this.y <= 0);
         }
     }
 
@@ -330,7 +362,7 @@ function playGame() {
         const index = (Math.floor(Math.floor(now * birdFrames.frameRate)) % birdFrames.numSprites);
         birdFrames.frameI = index % numBirdW;
         birdFrames.frameJ = Math.floor(index / numBirdH);
-        if (showHitBox) {
+        if (SHOW_HITBOX) {
             ctx.save()
             circle(player.x, player.y, player.hitBoxRadius(), 'red')
             ctx.restore()
@@ -348,15 +380,17 @@ function playGame() {
             }
 
         })
-        if (player.touchesFloorOrCeiling()){
+        if (player.touchesFloorOrCeiling()) {
             endGame = true;
         }
         return endGame;
     }
 
     let seemX = 0
+
     function drawBG(now, dt) {
-        if (themeOn) {
+        if (THEME_ON) {
+            sceneSpeed = sceneSpeed + dt * sceneAcceleration
             seemX = (seemX - sceneSpeed * dt) % cWidth
             ctx.save()
             ctx.translate(seemX, 0)
@@ -374,9 +408,11 @@ function playGame() {
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
         ctx.font = '15px arial';
-        ctx.fillText('Score', 3 * 0.25 * cWidth, cHeight / 8);
+        ctx.fillText('Score', 2 * 0.25 * cWidth, cHeight / 8);
+        ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
         ctx.font = '80px arial';
-        ctx.fillText(player.score, 3 * 0.25 * cWidth, cHeight / 8 + 70);
+        ctx.fillText(player.score, 2 * 0.25 * cWidth, cHeight / 8 + 70);
+        ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
         ctx.restore()
     }
 
@@ -395,7 +431,6 @@ function playGame() {
         ctx.arc(xPos, yPos, radius, 0, 2 * Math.PI, false);
         ctx.fill();
     }
-
 
 
 }
