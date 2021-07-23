@@ -132,8 +132,13 @@ const gamePad = {
     active: GAMEPAD_ACTIVE,
     gamePad: null,
     connect: function(){
+        let startLoop = this.loop.bind(this);
         return new Promise(resolve => window.addEventListener("gamepadconnected", resolve))
-            .then(connected => document.getElementById('prompt').style.display = 'none');
+            .then(connected => document.getElementById('prompt').style.display = 'none')
+    },
+    loop: function(){
+        this.processEvents();
+        requestAnimationFrame(this.loop);
     },
     processEvents: function() {
         this.gamePad = navigator.getGamepads()[0];
@@ -177,6 +182,7 @@ const gamePad = {
                     return;
                 }
                 this.buttonPressed[i] = true;
+                console.log(i, button,this.buttonPressHandlers[i]);
                 if (this.buttonPressHandlers[i])
                     this.buttonPressHandlers[i]();
             } else if (this.buttonPressed[i]) {

@@ -427,6 +427,7 @@ function render() {
         drawPlayers();
         requestAnimationFrame(render);
     }
+    console.log(7)
 
 }
 
@@ -668,9 +669,9 @@ let audioList = ["theme"];
 gamePad.onThumbstickPress(  1, setSpeed);
 gamePad.onThumbstickRelease(1, function(){      player.speed = 0;              });
 
-gamePad.onButtonPress("DOWN",  function(v){ setSpeed(+1);  }, true);
-gamePad.onButtonPress("UP",    function(v){ setSpeed(-1);  }, true);
-gamePad.onButtonPress("START", reset, true);
+gamePad.onButtonPress("DOWN",  function(){ setSpeed(+1);  }, true);
+gamePad.onButtonPress("UP",    function(){ setSpeed(-1);  }, true);
+gamePad.onButtonPress("START", reset , true);
 gamePad.onButtonPress("L2", toggleTheme, true);
 
 gamePad.onButtonRelease("DOWN", stop);

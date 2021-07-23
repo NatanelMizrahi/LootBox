@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad} from '../common/common.js';
 
 // Key mapping
 const LEFT = 37;
@@ -33,7 +33,7 @@ const SPAWN_CHANCE = 0.002;
 const INITIAL_MAX_AVOCADOS = 3;
 const MAX_AVOCADOS_STEP = 10;
 
-const HOLE_W = 100; //50;
+const HOLE_W = 70; //50;
 const HOLE_H = HOLE_W;
 const MALLET_W = HOLE_W * 1.1;
 const MALLET_H = HOLE_H * 1.1;
@@ -479,7 +479,7 @@ function keyDown(e) {
             player.hit();
             break
         case RESTART_KEY_CODE:
-            if (player.dead) reset(); //location.reload();
+            reset(); //location.reload();
             break;
         case MUTE_KEY:
             toggleTheme();
@@ -489,6 +489,7 @@ function keyDown(e) {
 
 // render
 function render() {
+    gamePad.processEvents();
     drawBG();
     drawHP();
 
@@ -501,6 +502,8 @@ function render() {
 }
 
 function reset(){
+    if (!player.dead)
+        return;
     score = 0;
     prevScore = 0;
     player.reset();
@@ -517,4 +520,18 @@ function playGame() {
 let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
 let audioList = ["theme"];
 
-loadGame(imageList, audioList).then(playGame);
+
+gamePad.onThumbstickPress(  1, function(v){ player.move(v > 0 ? DOWN : UP);}, true);
+gamePad.onThumbstickPress(  0, function(v){ player.move(v > 0 ? RIGHT : LEFT);}, true);
+
+gamePad.onButtonPress("DOWN",   function(){ player.move(DOWN);   }, true);
+gamePad.onButtonPress("UP",     function(){ player.move(UP);     }, true);
+gamePad.onButtonPress("LEFT",   function(){ player.move(LEFT);   }, true);
+gamePad.onButtonPress("RIGHT",  function(){ player.move(RIGHT);  }, true);
+gamePad.onButtonPress(3,        function(){ player.hit();        }, true);
+gamePad.onButtonPress("L2", toggleTheme, true);
+gamePad.onButtonPress("START", reset , true);
+
+gamePad.connect()
+    .then(connected => loadGame(imageList, audioList))
+    .then(playGame)
