@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad} from '../common/common.js';
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
@@ -116,6 +116,13 @@ var player = {
     running: false,
     jumping: false,
     platform: null,
+    controllerMoveX: function(val) {
+        if (Math.sign(val) != Math.sign(this.vx))
+            this.vx=0;
+        this.controllerMove = true;
+        this.ax = PLAYER_AX * val;
+        this.running = true;
+    },
     left: function() {
         this.vx=0;
         this.ax = -PLAYER_AX;
@@ -474,7 +481,8 @@ function drawMessages(){
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
-    ctx.fillText("[SPACE:jump][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
+//    ctx.fillText("[SPACE:jump][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
+    ctx.fillText("[3:jump][Joystick/arrows:move][M: toggle music]", cWidth/2, 30);
 
 }
 
@@ -494,14 +502,32 @@ window.addEventListener('keyup', keyUp, false);
 var rightKeyPressed = false;
 var leftKeyPressed = false;
 
+function keyUpLeft() {
+    leftKeyPressed = false;
+    checkPlayerIdle();
+}
+function keyUpRight() {
+    rightKeyPressed = false;
+    checkPlayerIdle();
+}
+function checkPlayerIdle(){
+    if (!leftKeyPressed && !rightKeyPressed)
+            player.stop();
+}
 function keyUp(e) {
     var key = e.which || e.keyCode;
-    if (key == RIGHT) rightKeyPressed = false;
-    if (key == LEFT)  leftKeyPressed = false;
-    if (!leftKeyPressed && !rightKeyPressed)
-        player.stop();
+    if (key == RIGHT) keyUpRight();
+    if (key == LEFT)  keyUpLeft();
 }
 
+function moveRight(){
+    rightKeyPressed= true;
+    player.right();
+}
+function moveLeft(){
+    leftKeyPressed= true;
+    player.left();
+}
 function keyDown(e) {
     if (e.repeat) return;
     var key = e.which || e.keyCode;
@@ -511,15 +537,13 @@ function keyDown(e) {
             player.jump();
             break;
         case RIGHT:
-            rightKeyPressed= true;
-            player.right();
+            moveRight();
             break;
         case LEFT:
-            leftKeyPressed= true;
-            player.left();
+            moveLeft();
             break;
         case RESTART_KEY_CODE:
-            if (player.dead) reset(); //location.reload();
+            reset();
             break;
         case MUTE_KEY:
             toggleTheme();
@@ -531,6 +555,7 @@ function keyDown(e) {
 
 // must implement
 function render() {
+    gamePad.processEvents();
     drawBG();
     drawWalls();
     drawScoreBoard(score, highscore);
@@ -542,6 +567,7 @@ function render() {
 }
 
 function reset(){
+    if (!player.dead) return;
     score = 0;
     prevScore = 0;
     n_platforms = 0;
@@ -550,7 +576,6 @@ function reset(){
     player.reset();
 }
 
-// must implement
 function playGame(){
         initFlames();
         initPlatforms();
@@ -560,7 +585,22 @@ function playGame(){
         requestAnimationFrame(render);
 }
 
+
+gamePad.onThumbstickPress(  0, function(v){     player.controllerMoveX(v);  });
+gamePad.onThumbstickRelease(0, function(){      player.stop();              });
+
+gamePad.onButtonPress(      3, function(){      player.jump();              }, true);
+gamePad.onButtonPress("LEFT",  moveLeft, true);
+gamePad.onButtonPress("RIGHT",  moveRight, true);
+gamePad.onButtonPress("START", reset, true);
+gamePad.onButtonPress("L2", toggleTheme, true);
+
+gamePad.onButtonRelease("LEFT", keyUpLeft);
+gamePad.onButtonRelease("RIGHT", keyUpRight);
+
 let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
 let audioList = ["theme"];
 
-loadGame(imageList, audioList).then(playGame);
+gamePad.connect()
+    .then(connected => loadGame(imageList, audioList))
+    .then(playGame)

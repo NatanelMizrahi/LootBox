@@ -663,4 +663,5 @@ function drawMessages() {
 let imageList = ["background", "player", "computer", "portal", "heart", "ball"];
 let audioList = ["theme"];
 
+
 loadGame(imageList, audioList).then(playGame);
