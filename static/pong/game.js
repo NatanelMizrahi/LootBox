@@ -25,7 +25,8 @@ import {
     loadAudio,
     loadImages,
     toggleTheme,
-    loadGame
+    loadGame,
+    gamePad
 } from '../common/common.js';
 const UP = 38;
 const DOWN = 40;
@@ -294,7 +295,8 @@ var player = {
     hp: INIT_HP,
     y: cHeight / 2,
     size: pHeight,
-    speed: playerSpeed,
+    baseSpeed: playerSpeed,
+    speed: 0,
     reverse: false,
     color: 'white',
     points: 0,
@@ -354,6 +356,10 @@ function playGame() {
 }
 
 function reset() {
+    console.log(1111);
+    if (!player.dead)
+        return;
+    console.log(2222);
     score = 0;
     difficulty = INIT_DIFFICULTY;
     player.dead = false;
@@ -361,6 +367,13 @@ function reset() {
     render();
 }
 
+
+function setSpeed(factor){
+    player.speed = player.baseSpeed * factor;
+}
+function stop(){
+    player.speed = 0;
+}
 //key press handlers
 window.addEventListener('keydown', keyDown, false);
 window.addEventListener('keyup', keyUp, false);
@@ -371,15 +384,15 @@ function keyDown(e) {
         e.preventDefault();
     switch (key) {
         case UP:
-            player.up = true;
+            player.speed = player.baseSpeed;
             e.preventDefault();
             break;
         case DOWN:
-            player.down = true;
+            player.speed = -player.baseSpeed;
             e.preventDefault();
             break;
         case RESTART_KEY_CODE:
-            if (player.dead) reset();
+            reset();
             break;
         case MUTE_KEY:
             toggleTheme();
@@ -391,10 +404,8 @@ function keyUp(e) {
     var key = e.which || e.keyCode;
     switch (key) {
         case UP:
-            player.up = false;
-            break;
         case DOWN:
-            player.down = false;
+            player.speed = 0;
             break;
     }
 }
@@ -402,7 +413,7 @@ function keyUp(e) {
 
 //graphics
 function render() {
-
+    gamePad.processEvents();
     time++;
     drawBG();
     middleLine();
@@ -437,10 +448,7 @@ function animate() {
     ctx.save();
     ctx.translate(spacing * 2, player.y);
     ctx.rotate(35 * Math.PI / 180);
-    rect(-fw / 4, -fh / 4, fw / 2 * PLAYER_SCALE, fh / 2 * PLAYER_SCALE, 'red', 0.5);
     ctx.drawImage(images.player, fw * frames.frameI, fh * frames.frameJ, fw, fh, -fw / 4, -fh / 4, fw / 2 * PLAYER_SCALE, fh / 2 * PLAYER_SCALE);
-    //        rect(-fw/4,-fh/4, fw/2,fh/2, 'red', 0.5);
-    //        ctx.drawImage(images.player,fw*frames.frameI,fh*frames.frameJ,fw, fh,-fw/4,-fh/4, fw/2,fh/2);
     ctx.restore();
     //animate computer
     ctx.save();
@@ -497,14 +505,8 @@ function checkWin(player1) {
 }
 
 function movePlayers() {
-    if (player.up) {
-        player.y -= player.speed;
-        player.checkRange();
-    }
-    if (player.down) {
-        player.y += player.speed;
-        player.checkRange();
-    }
+    player.y += player.speed;
+    player.checkRange();
     if (computer.up) {
         computer.y -= computer.speed;
         computer.checkRange();
@@ -663,5 +665,17 @@ function drawMessages() {
 let imageList = ["background", "player", "computer", "portal", "heart", "ball"];
 let audioList = ["theme"];
 
+gamePad.onThumbstickPress(  1, setSpeed);
+gamePad.onThumbstickRelease(1, function(){      player.speed = 0;              });
 
-loadGame(imageList, audioList).then(playGame);
+gamePad.onButtonPress("DOWN",  function(v){ setSpeed(+1);  }, true);
+gamePad.onButtonPress("UP",    function(v){ setSpeed(-1);  }, true);
+gamePad.onButtonPress("START", reset, true);
+gamePad.onButtonPress("L2", toggleTheme, true);
+
+gamePad.onButtonRelease("DOWN", stop);
+gamePad.onButtonRelease("UP", stop);
+
+gamePad.connect()
+    .then(connected => loadGame(imageList, audioList))
+    .then(playGame)
