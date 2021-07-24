@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas} from '../common/common.js';
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
@@ -96,9 +96,6 @@ function drawBG() {
         }
         bgOffsetX +=backgroundVX;
         ctx.drawImage(images.background, bgOffsetX, 0, BG_W, BG_H, 0, 0, cWidth, cHeight);
-//        ctx.drawImage(images.background, 0, 0, cWidth, cHeight);
-    } else {
-        rect(0, 0, cWidth, cHeight, 'black');
     }
 }
 
@@ -555,8 +552,9 @@ function keyDown(e) {
 
 // must implement
 function render() {
-    gamePad.processEvents();
-    drawBG();
+//    gamePad.processEvents();
+//    drawBG();
+    clearCanvas();
     drawWalls();
     drawScoreBoard(score, highscore);
     drawMessages();
@@ -577,6 +575,7 @@ function reset(){
 }
 
 function playGame(){
+        gamePad.loop();
         initFlames();
         initPlatforms();
         initWalls();

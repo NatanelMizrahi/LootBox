@@ -42,6 +42,17 @@ const buttonMapping = {
 };
 
 // functions
+function clearCanvas(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+function setDims(width, height){
+    let cHeight= Math.Floor(height * window.height);
+    let cWidth= Math.Floor(width * window.width);
+    let canvasWrapper = document.getElementById("canvas_wrapper");
+    canvasWrapper.style.height = cHeight + "px";
+    canvasWrapper.style.width = cWidth + "px";
+
+}
 function rect(xPos, yPos, width, height, color, alpha=1) {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
@@ -216,4 +227,4 @@ const gamePad = {
 
 
 
-export {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, DEFAULT_MUTED, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad};
+export {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, DEFAULT_MUTED, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas};

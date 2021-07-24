@@ -26,7 +26,8 @@ import {
     loadImages,
     toggleTheme,
     loadGame,
-    gamePad
+    gamePad,
+    clearCanvas
 } from '../common/common.js';
 const UP = 38;
 const DOWN = 40;
@@ -250,7 +251,7 @@ var audios = [
     "https://peal.io/download/tvqbh" //who the fuck are you? r
 ];
 
-loadAudioEffects();
+//loadAudioEffects();
 
 function loadAudioEffects() {
     audios = audios.map(url => new Audio(url))
@@ -414,7 +415,8 @@ function keyUp(e) {
 function render() {
 //    gamePad.processEvents();
     time++;
-    drawBG();
+//    drawBG();
+    clearCanvas();
     middleLine();
     drawScoreBoard(score, highscore);
     drawMessages();
@@ -470,7 +472,7 @@ function doScore(isPlayer1) {
     ball.ySpeed = 0
     while (ball.ySpeed == 0) {
         ball.ySpeed = randFloat(-MAX_BALL_Y_SPEED, MAX_BALL_Y_SPEED) * difficulty;
-        ball.ySpeed = 1;
+//        ball.ySpeed = 1;
     }
     if (isPlayer1) {
         player.points++;

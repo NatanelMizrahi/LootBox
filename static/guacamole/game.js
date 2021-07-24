@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas} from '../common/common.js';
 
 // Key mapping
 const LEFT = 37;
@@ -489,8 +489,9 @@ function keyDown(e) {
 
 // render
 function render() {
-    gamePad.processEvents();
-    drawBG();
+//    gamePad.processEvents();
+    clearCanvas();
+//    drawBG();
     drawHP();
 
     drawHoles();
@@ -514,6 +515,7 @@ function playGame() {
     initAvocados();
     initBackground();
     initHighScore();
+    gamePad.loop();
     requestAnimationFrame(render);
 }
 
