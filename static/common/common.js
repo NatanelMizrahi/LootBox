@@ -138,7 +138,7 @@ const gamePad = {
     },
     loop: function(){
         this.processEvents();
-        requestAnimationFrame(this.loop);
+        requestAnimationFrame(this.loop.bind(this));
     },
     processEvents: function() {
         this.gamePad = navigator.getGamepads()[0];

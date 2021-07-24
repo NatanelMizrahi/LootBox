@@ -352,14 +352,13 @@ var fw, fh;
 function playGame() {
     fw = images.player.width / 5;
     fh = images.player.height / 4;
+    gamePad.loop();
     requestAnimationFrame(render);
 }
 
 function reset() {
-    console.log(1111);
     if (!player.dead)
         return;
-    console.log(2222);
     score = 0;
     difficulty = INIT_DIFFICULTY;
     player.dead = false;
@@ -413,7 +412,7 @@ function keyUp(e) {
 
 //graphics
 function render() {
-    gamePad.processEvents();
+//    gamePad.processEvents();
     time++;
     drawBG();
     middleLine();
@@ -427,7 +426,10 @@ function render() {
         drawPlayers();
         requestAnimationFrame(render);
     }
-    console.log(7)
+//    if (gamePad.active && player.dead)
+//        gamePad.processEvents();
+
+//    console.log(7)
 
 }
 
