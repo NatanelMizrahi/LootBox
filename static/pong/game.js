@@ -34,7 +34,8 @@ const DOWN = 40;
 const INIT_HP = 5;
 const HEART_SIZE = 30;
 const PLAYER_SPEED = 5;
-const DIFFICULTY_STEP = 5;
+const DIFFICULTY_STEP = 1;
+const MIN_BALL_Y_SPEED = 1;
 const MAX_BALL_Y_SPEED = 3;
 const INIT_DIFFICULTY = 2;
 const SUBMIT_SCORE_DELTA = 1;
@@ -336,11 +337,16 @@ var computer = {
     }
 }
 
+function getRandYSpeed(){
+    let baseSpeed = randFloat(MIN_BALL_Y_SPEED, MAX_BALL_Y_SPEED);
+    let direction = randInt(0,1) ? 1: -1;
+    return baseSpeed * direction * difficulty;
+}
 var ball = {
     x: cWidth / 2,
     y: cHeight / 2,
     xSpeed: -default_speed * difficulty,
-    ySpeed: randFloat(-MAX_BALL_Y_SPEED, MAX_BALL_Y_SPEED) * difficulty,
+    ySpeed: getRandYSpeed(),
     radius: 20,
     color: 'red',
     draw: drawBall
@@ -384,11 +390,11 @@ function keyDown(e) {
         e.preventDefault();
     switch (key) {
         case UP:
-            player.speed = player.baseSpeed;
+            player.speed = -player.baseSpeed;
             e.preventDefault();
             break;
         case DOWN:
-            player.speed = -player.baseSpeed;
+            player.speed = +player.baseSpeed;
             e.preventDefault();
             break;
         case RESTART_KEY_CODE:
@@ -462,11 +468,7 @@ function doScore(isPlayer1) {
     ball.x = cWidth / 2;
     ball.y = cHeight / 2;
     ball.xSpeed = default_speed * difficulty * 0.7;
-    ball.ySpeed = 0
-    while (ball.ySpeed == 0) {
-        ball.ySpeed = randFloat(-MAX_BALL_Y_SPEED, MAX_BALL_Y_SPEED) * difficulty;
-//        ball.ySpeed = 1;
-    }
+    ball.ySpeed = getRandYSpeed();
     if (isPlayer1) {
         player.points++;
         updateScore(score + 1);
@@ -629,8 +631,8 @@ var prevScore = 0;
 function updateScore(val) {
     if (!player.dead) {
         score = val;
-        if (score - prevScore > DIFFICULTY_STEP) {
-            difficulty += 0.5;
+        if (score % DIFFICULTY_STEP == 0) {
+            difficulty += 0.2;
         }
         if (score - prevScore >= SUBMIT_SCORE_DELTA) {
             let normalizedScore = (score - prevScore) / SUBMIT_SCORE_DELTA;

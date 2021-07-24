@@ -13,7 +13,7 @@ const LOGO_SIZE = 200;
 
 const GAMEPAD_POLL_INTERVAL = 10;
 const GAMEPAD_NOISE_THRESHOLD = 0.1;
-const GAMEPAD_ACTIVE = true;
+const GAMEPAD_ACTIVE = false;
 
 const RESTART_KEY = GAMEPAD_ACTIVE ? "START" :  String.fromCharCode(RESTART_KEY_CODE).toUpperCase();
 const gameOverMessage = `GAME OVER (press ${RESTART_KEY} to replay)`;
@@ -148,11 +148,14 @@ const gamePad = {
     active: GAMEPAD_ACTIVE,
     gamePad: null,
     connect: function(){
+        if (!this.active)
+            return new Promise(resolve => resolve(document.getElementById('prompt').style.display = 'none'));
         let startLoop = this.loop.bind(this);
         return new Promise(resolve => window.addEventListener("gamepadconnected", resolve))
             .then(connected => document.getElementById('prompt').style.display = 'none')
     },
     loop: function(){
+        if (!this.active) return;
         this.processEvents();
         requestAnimationFrame(this.loop.bind(this));
     },
@@ -172,12 +175,13 @@ const gamePad = {
             if(!axisHandler){
                 return;
             }
-    
+
             if(Math.abs(axisVal) > GAMEPAD_NOISE_THRESHOLD){
 
                 if (this.axisActive[axis] && this.axisSticky[axis])
                     return;
                 this.axisActive[axis] = true;
+
                 axisHandler(axisVal);
             }
             else if (this.axisActive[axis]) {
