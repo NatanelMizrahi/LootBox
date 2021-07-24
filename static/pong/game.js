@@ -40,7 +40,7 @@ const INIT_DIFFICULTY = 2;
 const SUBMIT_SCORE_DELTA = 1;
 const CORNER_HIT_SPEED_FACT_Y = 0.3;
 const CORNER_HIT_SPEED_FACT_X = 0.2;
-const PLAYER_SCALE = 1;
+const PLAYER_SCALE = 1.5;
 
 function drawHP() {
     for (let i = 0; i < player.hp; i++) {
@@ -413,9 +413,7 @@ function keyUp(e) {
 
 //graphics
 function render() {
-//    gamePad.processEvents();
     time++;
-//    drawBG();
     clearCanvas();
     middleLine();
     drawScoreBoard(score, highscore);
@@ -428,11 +426,6 @@ function render() {
         drawPlayers();
         requestAnimationFrame(render);
     }
-//    if (gamePad.active && player.dead)
-//        gamePad.processEvents();
-
-//    console.log(7)
-
 }
 
 function drawBG() {
@@ -453,13 +446,13 @@ function animate() {
     ctx.save();
     ctx.translate(spacing * 2, player.y);
     ctx.rotate(35 * Math.PI / 180);
-    ctx.drawImage(images.player, fw * frames.frameI, fh * frames.frameJ, fw, fh, -fw / 4, -fh / 4, fw / 2 * PLAYER_SCALE, fh / 2 * PLAYER_SCALE);
+    ctx.drawImage(images.player, fw * frames.frameI, fh * frames.frameJ, fw, fh, -fw / 4 * PLAYER_SCALE, -fh / 4* PLAYER_SCALE, fw / 2 * PLAYER_SCALE, fh / 2 * PLAYER_SCALE);
     ctx.restore();
     //animate computer
     ctx.save();
     ctx.translate(cWidth - spacing * 2, computer.y);
     ctx.rotate(-35 * Math.PI / 180);
-    ctx.drawImage(images.computer, fw * frames.frameI, fh * frames.frameJ, fw, fh, -fw / 4, -fh / 4, fw / 2, fw / 2);
+    ctx.drawImage(images.computer, fw * frames.frameI, fh * frames.frameJ, fw, fh, -fw / 4* PLAYER_SCALE, -fh / 4* PLAYER_SCALE, fw / 2 * PLAYER_SCALE, fw / 2 * PLAYER_SCALE);
     ctx.restore();
 }
 

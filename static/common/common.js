@@ -4,10 +4,12 @@ const RESTART_KEY_CODE = 82; // R
 const MUTE_KEY = 77; // M
 // misc.
 const DEFAULT_MUTED = true;
+
 const PRODUCTION = false;
 const THEME_ON = true;
 const SHOW_HITBOX = false;
 const FLAMES_ON_DEAD_ONLY = false;
+const LOGO_SIZE = 200;
 
 const GAMEPAD_POLL_INTERVAL = 10;
 const GAMEPAD_NOISE_THRESHOLD = 0.1;
@@ -103,6 +105,9 @@ function drawScoreBoard(score, highscore, color='white'){
     ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
 }
 
+function drawLogo(width=LOGO_SIZE, height=LOGO_SIZE){
+    ctx.drawImage(images.logo, canvas.width/2 - width/2, height/8, width, height);
+}
 function loadImages(imageList) {
     let imageLoadedPromises = [];
     for (let img of imageList) {
@@ -193,7 +198,6 @@ const gamePad = {
                     return;
                 }
                 this.buttonPressed[i] = true;
-                console.log(i, button,this.buttonPressHandlers[i]);
                 if (this.buttonPressHandlers[i])
                     this.buttonPressHandlers[i]();
             } else if (this.buttonPressed[i]) {
@@ -227,4 +231,4 @@ const gamePad = {
 
 
 
-export {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, DEFAULT_MUTED, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas};
+export {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, DEFAULT_MUTED, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas,drawLogo};

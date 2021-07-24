@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas, drawLogo} from '../common/common.js';
 
 // Key mapping
 const LEFT = 37;
@@ -104,6 +104,7 @@ function drawHP(){
         ctx.drawImage(images.heart, i * HEART_SIZE, HEART_SIZE, HEART_SIZE, HEART_SIZE);
     }
 }
+
 
 var player = {
     color: 'red',
@@ -489,11 +490,9 @@ function keyDown(e) {
 
 // render
 function render() {
-//    gamePad.processEvents();
     clearCanvas();
-//    drawBG();
+    drawLogo();
     drawHP();
-
     drawHoles();
     drawAvocados();
     player.draw();
@@ -519,7 +518,7 @@ function playGame() {
     requestAnimationFrame(render);
 }
 
-let imageList = ["background", "hole", "avocado", "boss", "mallet", "pow", "heart"];
+let imageList = ["background", "logo", "hole", "avocado", "boss", "mallet", "pow", "heart"];
 let audioList = ["theme"];
 
 

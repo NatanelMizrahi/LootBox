@@ -2,8 +2,8 @@
     animation: none;
     background: url(assets/images/background.png);
     background-size: 100% 100% !important;
-    width: 100%;
+    width: 80%;
     height:80%;
-    left: 0%;
+    left: 10%;
     top: 10%;
 }

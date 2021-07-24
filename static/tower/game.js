@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas} from '../common/common.js';
+import {images, canvas, ctx, RESTART_KEY_CODE, MUTE_KEY, PRODUCTION, THEME_ON, SHOW_HITBOX, FLAMES_ON_DEAD_ONLY, DEFAULT_MUTED, gameOverMessage, rect, circle, range, randInt, randFloat, clamp, drawScoreBoard, loadAudio, loadImages, toggleTheme, loadGame, gamePad, clearCanvas,drawLogo} from '../common/common.js';
 // Key mapping
 const LEFT = 37;
 const RIGHT = 39;
@@ -555,6 +555,7 @@ function render() {
 //    gamePad.processEvents();
 //    drawBG();
     clearCanvas();
+    drawLogo();
     drawWalls();
     drawScoreBoard(score, highscore);
     drawMessages();
@@ -597,7 +598,7 @@ gamePad.onButtonPress("L2", toggleTheme, true);
 gamePad.onButtonRelease("LEFT", keyUpLeft);
 gamePad.onButtonRelease("RIGHT", keyUpRight);
 
-let imageList = ["player", "player_inv", "flames", "wall", "log", "background"];
+let imageList = ["player", "player_inv", "flames", "wall", "log", "background", "logo"];
 let audioList = ["theme"];
 
 gamePad.connect()
