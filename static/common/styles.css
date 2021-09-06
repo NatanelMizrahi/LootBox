@@ -19,15 +19,15 @@ body, html {
 #game_canvas {
     /* background: url(assets/images/background.png); */
 }
-#game_canvas {
-  animation: stars 20s linear infinite;
+/*#game_canvas {
+  animation: stars 30s linear infinite;
   background-size: auto 100%;
   background-repeat: no-repeat;
   position: absolute;
   left: 0;
   right: -100%;
   height: 100%;
-}
+}*/
 
 @keyframes stars {
   0%   { background-position: left; }
