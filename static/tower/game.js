@@ -51,6 +51,7 @@ var platform_vy = PLATFORM_INITIAL_VY;
 
 //sizes
 const WALL_WIDTH = 35;
+const WALL_OFFSET = 5;
 const PLAYER_R = 20;
 const SCALE_PLAYER_IMG = 1.4;
 const PLATFORM_HEIGHT = 1.5 * PLAYER_R;
@@ -310,8 +311,11 @@ function initWalls() {
 }
 
 function drawWalls() {
-    rect(0, 0, WALL_WIDTH, cHeight, wallPattern);                   // LEFT WALL
-    rect(cWidth - WALL_WIDTH, 0, WALL_WIDTH, cHeight, wallPattern); // RIGHT WALL
+    //rect(0, 0, WALL_WIDTH, cHeight, wallPattern);                   // LEFT WALL
+    //rect(cWidth - WALL_WIDTH, 0, WALL_WIDTH, cHeight, wallPattern); // RIGHT WALL
+    ctx.drawImage(images.wall, -WALL_OFFSET , 0, WALL_WIDTH, cHeight); // LEFT WALL
+    ctx.drawImage(images.wall, cWidth - WALL_WIDTH + WALL_OFFSET, 0, WALL_WIDTH, cHeight); // RIGHT WALL
+
 }
 
 // flames
@@ -553,8 +557,8 @@ function keyDown(e) {
 // must implement
 function render() {
 //    gamePad.processEvents();
-//    drawBG();
-    clearCanvas();
+//    clearCanvas();
+    drawBG();
     drawLogo();
     drawWalls();
     drawScoreBoard(score, highscore);
