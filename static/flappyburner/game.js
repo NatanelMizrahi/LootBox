@@ -407,10 +407,10 @@ function playGame() {
         ctx.save()
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
-        ctx.font = '15px arial';
+        ctx.font = '15px uroob';
         ctx.fillText('Score', 2 * 0.25 * cWidth, cHeight / 8);
         ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
-        ctx.font = '80px arial';
+        ctx.font = '80px uroob';
         ctx.fillText(player.score, 2 * 0.25 * cWidth, cHeight / 8 + 70);
         ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
         ctx.restore()

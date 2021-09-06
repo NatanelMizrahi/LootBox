@@ -286,7 +286,7 @@ function submitHighScore(){
 
 function drawMessages(){
     ctx.fillStyle='white';
-    ctx.font='20px arial';
+    ctx.font='20px uroob';
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }

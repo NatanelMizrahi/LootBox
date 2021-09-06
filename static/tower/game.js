@@ -478,7 +478,7 @@ function updateScore(val) {
 
 function drawMessages(){
     if (THEME_ON) ctx.fillStyle='black';
-    ctx.font='20px arial';
+    ctx.font='20px uroob';
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
@@ -560,10 +560,10 @@ function render() {
 //    clearCanvas();
     drawBG();
     drawLogo();
-    drawWalls();
     drawScoreBoard(score, highscore);
     drawMessages();
     drawFlames();
+    drawWalls();
     player.draw();
     drawPlatforms();
     requestAnimationFrame(render);

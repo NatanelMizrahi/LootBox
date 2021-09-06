@@ -13,7 +13,7 @@ const LOGO_SIZE = 200;
 
 const GAMEPAD_POLL_INTERVAL = 10;
 const GAMEPAD_NOISE_THRESHOLD = 0.1;
-const GAMEPAD_ACTIVE = false;
+const GAMEPAD_ACTIVE = true;
 
 const RESTART_KEY = GAMEPAD_ACTIVE ? "START" :  String.fromCharCode(RESTART_KEY_CODE).toUpperCase();
 const gameOverMessage = `GAME OVER (press ${RESTART_KEY} to replay)`;
@@ -97,10 +97,10 @@ function drawScoreBoard(score, highscore, color='white'){
     let cHeight = canvas.height;
     ctx.textAlign='center';
     ctx.fillStyle=color;
-    ctx.font= '80px arial';
+    ctx.font= '80px uroob';
     ctx.fillText(score,           cWidth/4, cHeight/8 + 70);
     ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
-    ctx.font='20px arial';
+    ctx.font='20px uroob';
     ctx.fillText('Score',         cWidth/4, cHeight/8);
     ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
 }
