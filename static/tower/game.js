@@ -115,8 +115,8 @@ var player = {
     jumping: false,
     platform: null,
     controllerMoveX: function(val) {
-        if (Math.sign(val) != Math.sign(this.vx))
-            this.vx=0;
+//        if (Math.sign(val) != Math.sign(this.vx))
+//            this.vx=0;
         this.controllerMove = true;
         this.ax = PLAYER_AX * val;
         this.running = true;
