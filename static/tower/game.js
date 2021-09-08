@@ -482,9 +482,7 @@ function drawMessages(){
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
-//    ctx.fillText("[SPACE:jump][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
-    ctx.fillText("[3:jump][Joystick/arrows:move][M: toggle music]", cWidth/2, 30);
-
+    ctx.fillText("[3/SPACE:jump][Joystick/arrows:move][L2/M:toggle music]", cWidth/2, 30);
 }
 
 function initHighScore(){
@@ -603,8 +601,7 @@ gamePad.onButtonRelease("LEFT", keyUpLeft);
 gamePad.onButtonRelease("RIGHT", keyUpRight);
 
 let imageList = ["player", "player_inv", "flames", "wall", "log", "background", "logo"];
-let audioList = ["theme"];
 
 gamePad.connect()
-    .then(connected => loadGame(imageList, audioList))
+    .then(connected => loadGame(imageList))
     .then(playGame)

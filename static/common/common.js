@@ -123,7 +123,7 @@ function toggleTheme() {
     theme.muted = !theme.muted;
 }
 
-function loadAudio(audioList){
+function loadAudio(){
     window.onload = function(){
         const theme = document.getElementById('theme');
         theme.autoplay = true;
@@ -138,8 +138,8 @@ function loadAudio(audioList){
     }
 }
 
-async function loadGame(imageList, audioList) {
-    loadAudio(audioList); // non blocking
+async function loadGame(imageList) {
+    loadAudio(); // non blocking
     return loadImages(imageList)
 }
 
