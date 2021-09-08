@@ -290,7 +290,7 @@ function drawMessages(){
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
-    ctx.fillText("[SPACE:hit][ARROW KEYS:move][M: toggle music]", cWidth/2, 30);
+    ctx.fillText("[SPACE:hit][Joystick/arrows:move][L2/M:toggle music]", cWidth/2, 30);
 
 }
 
@@ -519,8 +519,6 @@ function playGame() {
 }
 
 let imageList = ["background", "logo", "hole", "avocado", "boss", "mallet", "pow", "heart"];
-let audioList = ["theme"];
-
 
 gamePad.onThumbstickPress(  1, function(v){ player.move(v > 0 ? DOWN : UP);}, true);
 gamePad.onThumbstickPress(  0, function(v){ player.move(v > 0 ? RIGHT : LEFT);}, true);
@@ -534,5 +532,5 @@ gamePad.onButtonPress("L2", toggleTheme, true);
 gamePad.onButtonPress("START", reset , true);
 
 gamePad.connect()
-    .then(connected => loadGame(imageList, audioList))
+    .then(connected => loadGame(imageList))
     .then(playGame)

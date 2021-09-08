@@ -22,7 +22,6 @@ import {
     randFloat,
     clamp,
     drawScoreBoard,
-    loadAudio,
     loadImages,
     toggleTheme,
     loadGame,
@@ -42,6 +41,7 @@ const SUBMIT_SCORE_DELTA = 1;
 const CORNER_HIT_SPEED_FACT_Y = 0.3;
 const CORNER_HIT_SPEED_FACT_X = 0.2;
 const PLAYER_SCALE = 1.5;
+const NUM_AUDIOS = 24;
 
 function drawHP() {
     for (let i = 0; i < player.hp; i++) {
@@ -224,38 +224,13 @@ class Portal {
 }
 
 //audio files
-
-var audios = [
-    "https://www.myinstants.com/media/sounds/pickle_rick.mp3", //pickle rick r
-    "https://peal.io/download/74hun", //shum shum shlippity r
-    "https://peal.io/download/kechr", // the way the news goes r
-    "https://peal.io/download/o3b9s", //hit the sack r
-    "https://peal.io/download/fijtn", //wubaluba r
-    "https://peal.io/download/hr8m0", // wrecked son r
-    "https://peal.io/download/h3tlq", // tiny rick r
-    "https://peal.io/download/elcp9", // biach r
-    "https://peal.io/download/beknl", // thank you r
-    "https://peal.io/download/lkwsv", //burger time r
-    "https://peal.io/download/ese2n", //baby bunkers r
-    "https://peal.io/download/n4a6w", //help m
-    "https://peal.io/download/eolny", //ooee m
-    "https://peal.io/download/yb659", //OMG m
-    "https://peal.io/download/h6grs", // that's retarded r
-    "https://peal.io/download/eovn2", //my man ?
-    "https://peal.io/download/zau51", //for real m
-    "https://peal.io/download/rttym", //dream bitch r
-    "https://peal.io/download/s2m8i", //whatever r
-    "https://peal.io/download/ldaze", //lick my balls r
-    "https://peal.io/download/6iens", //oh man m
-    "https://peal.io/download/79qmp", // f u god
-    "https://peal.io/download/n4a6w", //ooo yeah ?
-    "https://peal.io/download/tvqbh" //who the fuck are you? r
-];
-
-//loadAudioEffects();
+var audios = [];
+loadAudioEffects();
 
 function loadAudioEffects() {
-    audios = audios.map(url => new Audio(url))
+    for (let i = 0; i < NUM_AUDIOS; i++) {
+        audios.push(new Audio(`assets/audio/${i}.wav`))
+    }
 }
 
 canvas.height = window.innerHeight;
@@ -275,7 +250,6 @@ var playerAspectRatio = 0.25;
 //Controls
 var default_settings = true;
 var multiplayer = false;
-var themeOn = true;
 var roundEdges = true;
 var default_speed = 6;
 var difficulty = INIT_DIFFICULTY;
@@ -482,26 +456,7 @@ function doScore(isPlayer1) {
             submitHighScore();
         }
     }
-}
-
-function checkWin(player1) {
-    var goal = document.getElementById('goal').value;
-    var index = 1;
-    if (player1) {
-        if (player.points == goal) {
-            player.points = 0;
-            computer.points = 0;
-            index = 2;
-        } else index = 0;
-    } else { //player 2
-        if (computer.points == goal) {
-            player.points = 0;
-            computer.points = 0;
-            index = 3;
-        } else index = 1;
-    }
-    playRandomAudio(index);
-    return;
+    playRandomAudio();
 }
 
 function movePlayers() {
@@ -616,11 +571,9 @@ function middleLine() {
     ctx.stroke();
 }
 
-function playRandomAudio(event) {
-    if (!themeOn) return;
-    var length = audios[event].length;
-    var index = Math.floor(Math.random() * length);
-    audios[event][index].play();
+function playRandomAudio() {
+    var index = Math.floor(Math.random() * audios.length);
+    audios[index].play();
 }
 
 // scoreboard
@@ -658,12 +611,11 @@ function drawMessages() {
     if (player.dead) {
         ctx.fillText(gameOverMessage, cWidth / 2, cHeight / 2);
     }
-    ctx.fillText("[ARROW KEYS:move (Hit edge to boost)][M: toggle music]", cWidth / 2, 30);
+    ctx.fillText("[Joystick/arrows:move (Hit edges to BOOST)][L2/M:toggle music]", cWidth/2, 30);
 
 }
 
 let imageList = ["background", "player", "computer", "portal", "heart", "ball"];
-let audioList = ["theme"];
 
 gamePad.onThumbstickPress(  1, setSpeed);
 gamePad.onThumbstickRelease(1, function(){      player.speed = 0;              });
@@ -677,5 +629,5 @@ gamePad.onButtonRelease("DOWN", stop);
 gamePad.onButtonRelease("UP", stop);
 
 gamePad.connect()
-    .then(connected => loadGame(imageList, audioList))
+    .then(connected => loadGame(imageList))
     .then(playGame)
