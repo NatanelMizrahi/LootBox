@@ -2,3 +2,5 @@ flask
 pyfirmata
 matplotlib
 pandas
+pyserial
+numpy
