@@ -587,11 +587,9 @@ function updateScore(val) {
         if (score % DIFFICULTY_STEP == 0) {
             difficulty += 0.2;
         }
-        if (score - prevScore >= SUBMIT_SCORE_DELTA) {
-            let normalizedScore = (score - prevScore) / SUBMIT_SCORE_DELTA;
-            postScore(normalizedScore);
-            prevScore = score;
-        }
+        let normalizedScore = (score - prevScore) / SUBMIT_SCORE_DELTA;
+        postScore(normalizedScore);
+        prevScore = score;
     }
 }
 

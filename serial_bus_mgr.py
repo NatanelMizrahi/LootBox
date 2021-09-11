@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 class SerialBusManager:
     # CLASS CONFIG
     PRODUCTION_MODE = False
-    TARGET_RPM = 1
+    TARGET_RPM = 0.3
     DEFAULT_SENSITIVITY: float = 0.005
     MIN_SENSITIVITY: float = 0.001
     MAX_SENSITIVITY: float = 0.100
@@ -21,11 +21,12 @@ class SerialBusManager:
     DELAY: float = 0.3
     MIN_DURATION = 0.007
     MAX_DURATION = 0.060
-    # 7ms -> 7.5 deg
+    MOTOR_COEFFS = [-9507, 1684, -6.823]
+    # 7ms -> 4.5 deg
     # Min Pulse: 10ms -> 23 deg
     # Max Pulse: 60ms -> 360 deg
     RPS: float = 5  # 10ms -> 90deg / 4 => 23 deg => 2.3 deg/ms; 255ms => 360 * 3 => 1080deg => 4.2 deg/ms
-    SERIAL_BUSES: List[str] = ['/dev/ttyUSBO', 'COM5']
+    SERIAL_BUSES: List[str] = ['/dev/ttyUSB0', 'COM5']
     NUM_MOTORS = 4
     MOTOR_CTRL_PIN_NOS: list = [4, 5, 6, 7]
 
@@ -37,6 +38,7 @@ class SerialBusManager:
             self.serial_path = Path(path)
             if self.serial_path.exists():
                 self.PRODUCTION_MODE = True
+                break
         self.total_rotation_degrees = 0
         self.sensitivity = self.DEFAULT_SENSITIVITY
         self.motor_control_pins = []
@@ -48,8 +50,8 @@ class SerialBusManager:
 
 
     def degrees_to_duration(self, degrees: float):
-        coeff = [0.02969, 4.662, - 26.59 - degrees]
-        np.roots(coeff)
+        coeff = self.MOTOR_COEFFS[:]
+        coeff[2] -= degrees
         roots = np.roots(coeff)
         duration = max(*roots)
         return duration
@@ -62,8 +64,7 @@ class SerialBusManager:
         return rotation_duration
 
     def duration_to_degrees(self, x):
-        x = x * 1000  # normalize to ms
-        y = 0.02969 * (x ** 2) + 4.662 * x - 26.59
+        y = np.polyval(self.MOTOR_COEFFS, x)
         print(f'{x=} -> {y=}')
         return y
 
@@ -72,6 +73,7 @@ class SerialBusManager:
         if self.PRODUCTION_MODE:
             pin = self.curr_motor_pin_idx
             duration_ms = int(rotate_duration * 1000)
+            print(f'Rotating Motors: {duration_ms}ms')
             dur_bytes = duration_ms.to_bytes(1, 'little')
             self.serial.write(str(0x1 << pin).encode('ascii'))
             self.serial.write(dur_bytes)
@@ -93,8 +95,8 @@ class SerialBusManager:
         now = datetime.now()
         time_delta_minutes = (now - self.start_ts).seconds / 60
         actual_rpm = total_rotations / time_delta_minutes
-        rpm_error = self.TARGET_RPM / actual_rpm
-        self.sensitivity -= rpm_error
+        rpm_error = (self.TARGET_RPM - actual_rpm)
+        self.sensitivity += rpm_error
         self.sensitivity = np.clip(self.sensitivity, self.MIN_SENSITIVITY, self.MAX_SENSITIVITY)
         print(f'{rotation_degrees =: .2f}˚, {self.sensitivity=}, {actual_rpm=}, {rpm_error=}')
         self.log_event(now, score, rotation_degrees, total_rotations, actual_rpm, rpm_error)
@@ -124,9 +126,9 @@ class SerialBusManager:
 def main():
     mgr = SerialBusManager()
     time.sleep(1)
-    score = 30
+    score = 1
     while True:
-        time.sleep(1)
+        time.sleep(0.5)
         mgr.rotate_motor(score)
 
 
