@@ -1,0 +1,7 @@
+#game_canvas {
+    background: url(assets/images/background.png);
+    width: 80%;
+    height: 80%;
+    left: 10%;
+    top: 10%;
+}

@@ -1,5 +1,5 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {THEME_ON, SHOW_HITBOX, canvas, ctx, clamp,} from '../common/common.js'
+import {THEME_ON, SHOW_HITBOX, canvas, ctx, clamp, gamePad, loadGame, images, toggleTheme,} from '../common/common.js'
 
 // SCORE
 const SUBMIT_SCORE_DELTA = 10;
@@ -8,23 +8,26 @@ const SUBMIT_SCORE_DELTA = 10;
 var highscore = 0;
 var score = 0;
 var prevScore = 0;
+
 function updateScore(val) {
-    score = Math.max(val,score);
+    score = Math.max(val, score);
     if (score - prevScore > SUBMIT_SCORE_DELTA) {
-        let normalizedScore = (score - prevScore)/SUBMIT_SCORE_DELTA;
+        let normalizedScore = (score - prevScore) / SUBMIT_SCORE_DELTA;
         postScore(normalizedScore);
         prevScore = score;
     }
 }
 
-function initHighScore(){
-    getGameHighScore('flappyburner')
-    .then(gameHighScore => highscore = gameHighScore);
+function initHighScore() {
+    getGameHighScore('flappy')
+        .then(gameHighScore => highscore = gameHighScore);
 }
-function submitHighScore(){
-    postGameHighScore('flappyburner', score)
-    .then(gameHighScore => highscore = gameHighScore);
+
+function submitHighScore() {
+    postGameHighScore('flappy', score)
+        .then(gameHighScore => highscore = gameHighScore);
 }
+
 function range(start, stop, step) {
     if (typeof stop == 'undefined') {
         // one param defined
@@ -46,43 +49,71 @@ function range(start, stop, step) {
     }
 
     return result;
-};
-
-
-var images = {};
-loadImages();
-
-function loadImages() {
-    let imageList = ["flappybg", "bird", "cactus"];
-    let imageLoadedPromises = [];
-    for (let img of imageList) {
-        images[img] = new Image();
-        images[img].src = `assets/images/${img}.png`;
-        imageLoadedPromises.push(new Promise(resolve => images[img].onload = resolve));
-    }
-    Promise.all(imageLoadedPromises).then(loaded => {
-        playGame();
-        initHighScore();
-    });
 }
 
 
 function playGame() {
-    //canvas size
-    const WINDOW_WIDTH_CANVAS_RATIO = 0.7;
-    const WINDOW_HEIGHT_CANVAS_RATIO = 1;
+    gamePad.onButtonPress(3, function (e) {
+        e.keyCode = player.upKey;
+        player.onUpKeyPress(e);
+    }, false);
+    gamePad.onButtonRelease(3, function () {
+        player.onUpKeyRelease({keyCode: player.upKey});
+    });
+    gamePad.onButtonPress("LEFT", function (e) {
+        e.keyCode = player.leftKey;
+        player.onUpKeyPress(e);
+    }, true);
+    gamePad.onButtonRelease("LEFT", function () {
+        player.onUpKeyRelease({keyCode: player.leftKey});
+    });
+    gamePad.onButtonPress("RIGHT", function (e) {
+        e.keyCode = player.rightKey;
+        player.onUpKeyPress(e);
+    }, true);
+    gamePad.onButtonRelease("RIGHT", function () {
+        player.onUpKeyRelease({keyCode: player.rightKey});
+    });
+    gamePad.onButtonPress("UP", function (e) {
+        e.keyCode = player.upKey;
+        player.onUpKeyPress(e);
+    }, false);
+    gamePad.onButtonRelease("UP", function () {
+        player.onUpKeyRelease({keyCode: player.upKey});
+    });
+    gamePad.onButtonPress("DOWN", function (e) {
+        e.keyCode = player.downKey;
+        player.onUpKeyPress(e);
+    }, false);
+    gamePad.onButtonRelease("DOWN", function () {
+        player.onUpKeyRelease({keyCode: player.downKey});
+    });
+    gamePad.onButtonPress("START", resetGameState, true);
+    gamePad.onButtonPress("L2", toggleTheme, true);
 
-    const aspectRatio = 16 / 9 // images.flappybg.width / images.flappybg.height;
-    const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
-    const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
-    let scaledMaxWidth = maxHeight * aspectRatio;
-    let scaleFactor = Math.min(1, maxWidth / scaledMaxWidth);
-    canvas.width = scaledMaxWidth * scaleFactor;
-    canvas.height = maxHeight * scaleFactor;
+    gamePad.onThumbstickPress(  0, function(v){
+        const direction = v < 0 ? player.leftKey : player.rightKey
+        player.onUpKeyPress({
+            keyCode: direction
+        });
+    }, true);
+    gamePad.onThumbstickRelease(0, function(){
+        player.onUpKeyRelease({
+            keyCode: player.leftKey
+        });
+        player.onUpKeyRelease({
+            keyCode: player.rightKey
+        });
+    });
+
+    gamePad.loop();
+
+    canvas.width = window.innerWidth * 0.75;
+    canvas.height = window.innerHeight;
+    const cWidth = canvas.width;
+    const cHeight = canvas.height;
 
     //Settings
-    var cWidth = canvas.width;
-    var cHeight = canvas.height;
     const stoneHeight = 55;
     var pHeight = 85;
     var pWidth = 15;
@@ -166,6 +197,7 @@ function playGame() {
 
         requestAnimationFrame(render);
     }
+
     const sceneInitialSpeed = 300;
     const sceneAcceleration = 10;
     let sceneSpeed = sceneInitialSpeed;
@@ -269,14 +301,16 @@ function playGame() {
         xMax: cWidth,
         xMin: 0,
         distanceCovered: 0,
+        jumpBoost: 500,
         getCenter: function () {
             return [this.x + this.radius, this.y + this.radius]
         },
         checkRange: function () {
             return this.x >= 0 && this.x < cWidth && this.y >= 0 && this.y < cHeight
         },
-
-
+        jump: function (){
+            this.up = true
+        },
         move: function (dt) {
             const acceleration = 1500.0 * (this.up ? -1.0 : 1.0) // pixels / s^2
             this.vy = this.vy + acceleration * dt
@@ -311,7 +345,7 @@ function playGame() {
                 }
                 case this.downKey: {
                     this.up = false;
-                    if (!e.repeat && this.vy <= 0){
+                    if (!e.repeat && this.vy <= 0) {
                         this.vy = 0;
                     }
                     break;
@@ -319,7 +353,6 @@ function playGame() {
             }
         },
         onUpKeyRelease: function (e) {
-            // if (e.keyCode !== this.upkey) return;
             switch (e.keyCode) {
                 case this.upKey: {
                     this.up = false
@@ -394,9 +427,9 @@ function playGame() {
             seemX = (seemX - sceneSpeed * dt) % cWidth
             ctx.save()
             ctx.translate(seemX, 0)
-            ctx.drawImage(images.flappybg, 0, 0, cWidth, cHeight);
+            ctx.drawImage(images.background, 0, 0, cWidth, cHeight);
             ctx.translate(cWidth, 0)
-            ctx.drawImage(images.flappybg, 0, 0, cWidth, cHeight);
+            ctx.drawImage(images.background, 0, 0, cWidth, cHeight);
             ctx.restore()
         } else {
             rect(0, 0, cWidth, cHeight, 'black');
@@ -409,10 +442,10 @@ function playGame() {
         ctx.textAlign = 'center';
         ctx.font = '15px uroob';
         ctx.fillText('Score', 2 * 0.25 * cWidth, cHeight / 8);
-        ctx.fillText('Highscore', 3 * cWidth/4, cHeight/8);
+        ctx.fillText('Highscore', 3 * cWidth / 4, cHeight / 8);
         ctx.font = '80px uroob';
         ctx.fillText(player.score, 2 * 0.25 * cWidth, cHeight / 8 + 70);
-        ctx.fillText(highscore,   3 * cWidth/4, cHeight/8 + 70);
+        ctx.fillText(highscore, 3 * cWidth / 4, cHeight / 8 + 70);
         ctx.restore()
     }
 
@@ -431,6 +464,8 @@ function playGame() {
         ctx.arc(xPos, yPos, radius, 0, 2 * Math.PI, false);
         ctx.fill();
     }
-
-
 }
+const imageList = ["background", "bird", "cactus"];
+gamePad.connect()
+    .then(connected => loadGame(imageList))
+    .then(playGame)

@@ -160,7 +160,15 @@ const gamePad = {
         setTimeout(this.loop.bind(this), GAMEPAD_POLL_INTERVAL);
     },
     processEvents: function() {
-        this.gamePad = navigator.getGamepads()[0];
+        let gamePadInst = null;
+        const gamePads = navigator.getGamepads()
+        for (let i=0; i < gamePads.length; i++){
+            if (gamePads[i] !== null) {
+                gamePadInst = gamePads[i];
+                break;
+            }
+        }
+        this.gamePad = gamePadInst
         this.handleThumbStick();
         this.handleButtons();
     },
@@ -201,9 +209,10 @@ const gamePad = {
                 if (this.buttonPressed[i] && this.buttonSticky[i]){
                     return;
                 }
+                const repeat = this.buttonPressed[i] === true;
                 this.buttonPressed[i] = true;
                 if (this.buttonPressHandlers[i])
-                    this.buttonPressHandlers[i]();
+                    this.buttonPressHandlers[i]({repeat: repeat});
             } else if (this.buttonPressed[i]) {
                 this.buttonPressed[i] = false;
                 let buttonReleaseHandler = this.buttonReleaseHandlers[i];
