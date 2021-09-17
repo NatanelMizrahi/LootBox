@@ -108,21 +108,12 @@ function playGame() {
 
     gamePad.loop();
 
-    //canvas size
-    const WINDOW_WIDTH_CANVAS_RATIO = 0.7;
-    const WINDOW_HEIGHT_CANVAS_RATIO = 1;
-
-    const aspectRatio = 16 / 9 // images.flappybg.width / images.flappybg.height;
-    const maxWidth = (window.innerWidth * WINDOW_WIDTH_CANVAS_RATIO);
-    const maxHeight = (window.innerHeight * WINDOW_HEIGHT_CANVAS_RATIO);
-    let scaledMaxWidth = maxHeight * aspectRatio;
-    let scaleFactor = Math.min(1, maxWidth / scaledMaxWidth);
-    canvas.width = scaledMaxWidth * scaleFactor;
-    canvas.height = maxHeight * scaleFactor;
+    canvas.width = window.innerWidth * 0.75;
+    canvas.height = window.innerHeight;
+    const cWidth = canvas.width;
+    const cHeight = canvas.height;
 
     //Settings
-    var cWidth = canvas.width;
-    var cHeight = canvas.height;
     const stoneHeight = 55;
     var pHeight = 85;
     var pWidth = 15;
