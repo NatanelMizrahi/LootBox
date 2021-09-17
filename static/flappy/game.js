@@ -19,12 +19,12 @@ function updateScore(val) {
 }
 
 function initHighScore() {
-    getGameHighScore('flappyburner')
+    getGameHighScore('flappy')
         .then(gameHighScore => highscore = gameHighScore);
 }
 
 function submitHighScore() {
-    postGameHighScore('flappyburner', score)
+    postGameHighScore('flappy', score)
         .then(gameHighScore => highscore = gameHighScore);
 }
 
