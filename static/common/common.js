@@ -11,7 +11,7 @@ const SHOW_HITBOX = false;
 const FLAMES_ON_DEAD_ONLY = false;
 const LOGO_SIZE = 200;
 
-const GAMEPAD_POLL_INTERVAL = 10;
+const GAMEPAD_POLL_INTERVAL = 16;
 const GAMEPAD_NOISE_THRESHOLD = 0.1;
 const GAMEPAD_ACTIVE = true;
 
@@ -157,7 +157,7 @@ const gamePad = {
     loop: function(){
         if (!this.active) return;
         this.processEvents();
-        requestAnimationFrame(this.loop.bind(this));
+        setTimeout(this.loop.bind(this), GAMEPAD_POLL_INTERVAL);
     },
     processEvents: function() {
         this.gamePad = navigator.getGamepads()[0];
