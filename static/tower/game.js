@@ -27,7 +27,7 @@ const stateFrames = {
 };
 
 // SCORE
-const SUBMIT_SCORE_DELTA = 10;
+const SUBMIT_SCORE_DELTA = 15;
 
 // PHYSICS
 const G = 1.3;
@@ -41,7 +41,7 @@ const VX_JUMP_FACT =  0.02;// 0.03;
 const VX_WALLJUMP_FACT = 2 * VX_JUMP_FACT;
 
 const PLATFORM_AY = 0.004; //0.004;
-const PLATFORM_INITIAL_VY = 3;
+const PLATFORM_INITIAL_VY = 2;
 const PLATFORM_FALL_DELAY = 70;
 const PLATFORM_PRE_FALL_SHAKE_DY = 5;
 const MOVING_PLATFORM_VX = 1;
@@ -478,11 +478,11 @@ function updateScore(val) {
 
 function drawMessages(){
     if (THEME_ON) ctx.fillStyle='black';
-    ctx.font='20px uroob';
+    ctx.font='30px uroob';
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
-    ctx.fillText("[3/SPACE:jump][Joystick/arrows:move][L2/M:toggle music]", cWidth/2, 30);
+    ctx.fillText("[3️⃣:jump][➕/Joystick:move]", cWidth/2, 30);
 }
 
 function initHighScore(){

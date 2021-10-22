@@ -31,15 +31,15 @@ import {
 const UP = 38;
 const DOWN = 40;
 const INIT_HP = 5;
-const HEART_SIZE = 30;
+const HEART_SIZE = 50;
 const PLAYER_SPEED = 5;
 const DIFFICULTY_STEP = 1;
 const MIN_BALL_Y_SPEED = 1;
 const MAX_BALL_Y_SPEED = 3;
 const INIT_DIFFICULTY = 2;
 const SUBMIT_SCORE_DELTA = 1;
-const CORNER_HIT_SPEED_FACT_Y = 0.3;
-const CORNER_HIT_SPEED_FACT_X = 0.2;
+const CORNER_HIT_SPEED_FACT_Y = 0.2;
+const CORNER_HIT_SPEED_FACT_X = 0.15;
 const PLAYER_SCALE = 1.5;
 const NUM_AUDIOS = 24;
 
@@ -505,8 +505,8 @@ function moveBall() {
         ball.xSpeed = -ball.xSpeed; //change direction;
 
         //Check for corner hit
-        topDist = player.top() - ball.y + ball.radius;
-        bottomDist = ball.y - player.bottom() + ball.radius;
+        topDist = player.top() - ball.y + 2 * ball.radius;
+        bottomDist = ball.y - player.bottom() + 2 * ball.radius;
         if (topDist > 0) {
             ball.xSpeed += topDist * CORNER_HIT_SPEED_FACT_X;
             ball.ySpeed = -topDist * CORNER_HIT_SPEED_FACT_Y;
@@ -605,11 +605,11 @@ function submitHighScore() {
 
 function drawMessages() {
     ctx.fillStyle = 'white';
-    ctx.font = '20px uroob';
+    ctx.font = '35px uroob';
     if (player.dead) {
         ctx.fillText(gameOverMessage, cWidth / 2, cHeight / 2);
     }
-    ctx.fillText("[Joystick/arrows:move (Hit edges to BOOST)][L2/M:toggle music]", cWidth/2, 30);
+    ctx.fillText("[➕/Joystick: Move] (Tip: hit edges to BOOST)", cWidth/2, 30);
 
 }
 

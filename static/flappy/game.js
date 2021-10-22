@@ -148,7 +148,7 @@ function playGame() {
         if (gameState === States.GAMEOVER) {
             ctx.fillText(gameOverMessage, cWidth / 2, cHeight / 2);
         }
-        ctx.fillText("[3: Fly][Joystick/Arrows: Move]", cWidth / 2, 30);
+        ctx.fillText("[3️⃣: Fly][➕/Joystick: Move]", cWidth / 2, 30);
     }
 
     //game render interval
