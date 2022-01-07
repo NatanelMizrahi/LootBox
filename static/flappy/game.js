@@ -1,5 +1,17 @@
 import {postScore, getGameHighScore, postGameHighScore} from '../common/scoreAPI.js'
-import {THEME_ON, SHOW_HITBOX, canvas, ctx, clamp, gamePad, loadGame, images, toggleTheme,} from '../common/common.js'
+import {
+    THEME_ON,
+    SHOW_HITBOX,
+    canvas,
+    ctx,
+    clamp,
+    gamePad,
+    loadGame,
+    images,
+    toggleTheme,
+    gameOverMessage,
+    RESTART_KEY_CODE
+} from '../common/common.js'
 
 // SCORE
 const SUBMIT_SCORE_DELTA = 10;
@@ -8,6 +20,15 @@ const SUBMIT_SCORE_DELTA = 10;
 var highscore = 0;
 var score = 0;
 var prevScore = 0;
+
+const States = {
+    INITIAL: 'INITIAL',
+    GAMEOVER: 'GAME_OVER',
+    DEAD: 'PLAYER_DEAD',
+    RUNNING: 'RUNNING',
+}
+
+let gameState = States.GAMEOVER;
 
 function updateScore(val) {
     score = Math.max(val, score);
@@ -55,35 +76,35 @@ function range(start, stop, step) {
 function playGame() {
     gamePad.onButtonPress(3, function (e) {
         e.keyCode = player.upKey;
-        player.onUpKeyPress(e);
+        player.onKeyPress(e);
     }, false);
     gamePad.onButtonRelease(3, function () {
         player.onUpKeyRelease({keyCode: player.upKey});
     });
     gamePad.onButtonPress("LEFT", function (e) {
         e.keyCode = player.leftKey;
-        player.onUpKeyPress(e);
+        player.onKeyPress(e);
     }, true);
     gamePad.onButtonRelease("LEFT", function () {
         player.onUpKeyRelease({keyCode: player.leftKey});
     });
     gamePad.onButtonPress("RIGHT", function (e) {
         e.keyCode = player.rightKey;
-        player.onUpKeyPress(e);
+        player.onKeyPress(e);
     }, true);
     gamePad.onButtonRelease("RIGHT", function () {
         player.onUpKeyRelease({keyCode: player.rightKey});
     });
     gamePad.onButtonPress("UP", function (e) {
         e.keyCode = player.upKey;
-        player.onUpKeyPress(e);
+        player.onKeyPress(e);
     }, false);
     gamePad.onButtonRelease("UP", function () {
         player.onUpKeyRelease({keyCode: player.upKey});
     });
     gamePad.onButtonPress("DOWN", function (e) {
         e.keyCode = player.downKey;
-        player.onUpKeyPress(e);
+        player.onKeyPress(e);
     }, false);
     gamePad.onButtonRelease("DOWN", function () {
         player.onUpKeyRelease({keyCode: player.downKey});
@@ -91,13 +112,13 @@ function playGame() {
     gamePad.onButtonPress("START", resetGameState, true);
     gamePad.onButtonPress("L2", toggleTheme, true);
 
-    gamePad.onThumbstickPress(  0, function(v){
+    gamePad.onThumbstickPress(0, function (v) {
         const direction = v < 0 ? player.leftKey : player.rightKey
-        player.onUpKeyPress({
+        player.onKeyPress({
             keyCode: direction
         });
     }, true);
-    gamePad.onThumbstickRelease(0, function(){
+    gamePad.onThumbstickRelease(0, function () {
         player.onUpKeyRelease({
             keyCode: player.leftKey
         });
@@ -120,6 +141,15 @@ function playGame() {
 
     //Controls
     var paused = false;
+
+    function drawMessages() {
+        if (THEME_ON) ctx.fillStyle = 'red';
+        ctx.font = 'bold 20px uroob';
+        if (gameState === States.GAMEOVER) {
+            ctx.fillText(gameOverMessage, cWidth / 2, cHeight / 2);
+        }
+        ctx.fillText("[3️⃣: Fly][➕/Joystick: Move]", cWidth / 2, 30);
+    }
 
     //game render interval
     requestAnimationFrame(render);
@@ -148,9 +178,9 @@ function playGame() {
     const cactusW = images.cactus.width / numCactusW;
     const cactusH = images.cactus.height / numCactusH;
 
-    function onEndGame() {
+    function onPlayerDead() {
         submitHighScore()
-        resetGameState()
+        gameState = States.DEAD;
 //        player.dead = true;
     }
 
@@ -177,24 +207,34 @@ function playGame() {
         previousRenderTime = nowSec();
         prevGenDistance = 0;
         sceneSpeed = sceneInitialSpeed;
+        gameState = States.RUNNING;
     }
 
     function render() {
-
-        if (paused) {
-            requestAnimationFrame(render);
-            return
-        }
-
         const {now, dt} = calculateDt();
-        drawBG(now, dt);
-        renderPlayer(now, dt);
-        renderObstacles(now, dt);
-        const endGame = computeHitBox();
-        scoreBoard(now, dt, endGame);
+        switch (gameState) {
+            case States.DEAD:
+                drawBG(now, 0);
+                renderPlayer(now, dt);
+                renderObstacles(now, 0);
+                computeHitBox();
+                break;
+            case States.INITIAL:
+            case States.RUNNING:
+                drawBG(now, dt);
+                renderPlayer(now, dt);
+                renderObstacles(now, dt);
+                computeHitBox();
+                break;
+            case States.GAMEOVER:
+                drawBG(0, 0);
+                renderPlayer(0, 0);
+                renderObstacles(0, 0);
+                break;
 
-        if (endGame) onEndGame();
-
+        }
+        drawMessages();
+        scoreBoard();
         requestAnimationFrame(render);
     }
 
@@ -207,7 +247,7 @@ function playGame() {
 
     function renderObstacles(now, dt) {
         const obstacleGenInterval = 300 + (1200 - 300) * Math.random()
-        if (player.distanceCovered > (prevGenDistance + obstacleGenInterval)) {
+        if (player.distanceCovered > (prevGenDistance + obstacleGenInterval) && obstacles.length <= 5) {
             prevGenDistance = player.distanceCovered
             let obstacle = {
                 y: cHeight,
@@ -308,7 +348,7 @@ function playGame() {
         checkRange: function () {
             return this.x >= 0 && this.x < cWidth && this.y >= 0 && this.y < cHeight
         },
-        jump: function (){
+        jump: function () {
             this.up = true
         },
         move: function (dt) {
@@ -326,7 +366,12 @@ function playGame() {
             this.x = clamp(new_x, this.xMin, this.xMax)
         },
 
-        onUpKeyPress: function (e) {
+        onKeyPress: function (e) {
+            if (gameState === States.GAMEOVER && e.keyCode === RESTART_KEY_CODE) {
+                resetGameState();
+                return;
+            }
+            if (gameState !== States.RUNNING) return;
             switch (e.keyCode) {
                 case this.upKey: {
                     this.up = true
@@ -384,7 +429,7 @@ function playGame() {
         }
     }
 
-    window.addEventListener('keydown', (e) => player.onUpKeyPress(e), false)
+    window.addEventListener('keydown', (e) => player.onKeyPress(e), false)
     window.addEventListener('keyup', (e) => player.onUpKeyRelease(e), false)
 
 
@@ -406,17 +451,19 @@ function playGame() {
     }
 
     function computeHitBox() {
-        let endGame = false;
         obstacles.forEach((obstacle) => {
             if (obstacle.contains(player)) {
-                endGame = true;
+                onPlayerDead();
             }
 
         })
         if (player.touchesFloorOrCeiling()) {
-            endGame = true;
+            if (gameState !== States.DEAD) {
+                onPlayerDead();
+            } else {
+                gameState = States.GAMEOVER
+            }
         }
-        return endGame;
     }
 
     let seemX = 0
@@ -436,7 +483,7 @@ function playGame() {
         }
     }
 
-    function scoreBoard(now, dt, endGame) {
+    function scoreBoard() {
         ctx.save()
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
@@ -465,7 +512,9 @@ function playGame() {
         ctx.fill();
     }
 }
+
 const imageList = ["background", "bird", "cactus"];
 gamePad.connect()
     .then(connected => loadGame(imageList))
     .then(playGame)
+

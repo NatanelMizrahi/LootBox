@@ -52,7 +52,7 @@ const N_HOLES_X = 5; //6;
 const N_HOLES_Y = 5; //4;
 const MALLET_MAX_X = (N_HOLES_X-1) * HOLE_W + HOLES_OFFSET_X;
 const MALLET_MAX_Y = (N_HOLES_Y-1) * HOLE_H + HOLES_OFFSET_Y;
-const HEART_SIZE = 30;
+const HEART_SIZE = 35;
 const INIT_HP = 10;
 
 
@@ -286,11 +286,11 @@ function submitHighScore(){
 
 function drawMessages(){
     ctx.fillStyle='white';
-    ctx.font='20px uroob';
+    ctx.font='35px uroob';
     if (player.dead){
         ctx.fillText(gameOverMessage, cWidth/2, cHeight/2);
     }
-    ctx.fillText("[SPACE:hit][Joystick/arrows:move][L2/M:toggle music]", cWidth/2, 30);
+    ctx.fillText("[3️⃣:hit][➕/Joystick:move]", cWidth/2, 30);
 
 }
 

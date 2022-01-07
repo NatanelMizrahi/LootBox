@@ -1,6 +1,7 @@
 body, html {
   background-color: black;
   height: 100%;
+  width: 100%;
   margin: 0;
 }
 
@@ -51,4 +52,25 @@ body, html {
   height: 40%;
   width: auto;
   display: block;
+}
+
+
+#banner{
+    font-family: uroob;
+    color: white;
+}
+
+.relative {
+    position: relative;
+    width: inherit;
+}
+
+.fixed {
+    position: fixed;
+    z-index: 1;
+    width: inherit;
+}
+
+.fixed h1 {
+    text-align: center;
 }
